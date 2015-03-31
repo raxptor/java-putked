@@ -1,9 +1,10 @@
 package putked;
 
+import java.util.HashMap;
+
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-
 
 public class Interop 
 {
@@ -12,12 +13,125 @@ public class Interop
 		public void MED_Initialize(String dllPath, String dataPath);
 
 		public Pointer MED_TypeByIndex(int i);
+		
+		// mem objects
+		public Pointer MED_DiskLoad(String path);
+		public Pointer MED_TypeOf(Pointer obj);
+		
+		// types
 		public String MED_Type_GetName(Pointer p);
-		public String MED_Type_GetModuleName(Pointer p);
+		public String MED_Type_GetModuleName(Pointer p);	
+		public Pointer MED_Type_GetField(Pointer type, int index);
+		
+		// fields
+		public String MED_Field_GetName(Pointer p);
+		
 	}
+	
+	public static class Field
+	{
+		Pointer _p;
+		
+		public Field(Pointer p)
+		{
+			_p = p;
+		}
+		
+		public String getName()
+		{
+			return s_ni.MED_Field_GetName(_p);
+		}
+	}
+	
+	public static class Type 
+	{
+		Pointer _p;
+		
+		public Type(Pointer p)
+		{
+			_p = p;
+		}
+		
+		String getName()
+		{
+			return s_ni.MED_Type_GetName(_p); 
+		}
+		
+		String getModule()
+		{
+			return s_ni.MED_Type_GetModuleName(_p);
+		}
+		
+		Field getField(int i)
+		{
+			return s_wrap.getFieldWrapper(s_ni.MED_Type_GetField(_p,  i));
+		}
+	}
+		
+	public static class MemInstance
+	{
+		Pointer _p;
+		Type _type;
+		
+		public MemInstance(Pointer p)
+		{
+			_p = p;
+			_type = s_wrap.getTypeWrapper(s_ni.MED_TypeOf(p));
+		}
+		
+		public Type getType()
+		{
+			return _type;
+		}
+	}
+
+	public static class NIWrap 
+	{
+		private NI _i;
+		private HashMap<Pointer, Field> s_fields = new HashMap<>();
+		private HashMap<Pointer, Type> s_types = new HashMap<>();
+		
+		public NIWrap(NI i)
+		{
+			_i = i;
+		}
+		
+		public Field getFieldWrapper(Pointer p)
+		{
+			if (p == Pointer.NULL)
+				return null;
+			
+			Field f = s_fields.get(p);
+			if (f == null)
+			{
+				f = new Field(p);
+				s_fields.put(p, f);
+			}
+			return f;
+		}
+		
+		public Type getTypeWrapper(Pointer p)
+		{
+			if (p == Pointer.NULL)
+				return null;
+			
+			Type f = s_types.get(p);
+			if (f == null)
+			{
+				f = new Type(p);
+				s_types.put(p, f);
+			}
+			return f;
+		}		
+	}
+	
+	public static NI s_ni;
+	public static NIWrap s_wrap;
 	
 	public static NI Load(String file)
 	{
-		return (NI) Native.loadLibrary(file, NI.class);
+		s_ni = (NI) Native.loadLibrary(file, NI.class);
+		s_wrap = new NIWrap(s_ni);
+		return s_ni;
 	}
 }
