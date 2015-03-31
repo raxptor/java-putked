@@ -109,7 +109,7 @@ public class ObjectLibrary
 			}
         });
                 
-        m_root.getChildren().add(new ObjectEditor(new Interop.MemInstance(m_allObjects.get(4).object)).getRoot());
+        m_root.getChildren().add(new ObjectEditor(new Interop.MemInstance(m_allObjects.get(15).object)).getRoot());
 	}
 	
 	private void filterOnPath(String start)
