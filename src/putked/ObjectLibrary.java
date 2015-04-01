@@ -109,7 +109,7 @@ public class ObjectLibrary
 			}
         });
                 
-        m_root.getChildren().add(new ObjectEditor(new Interop.MemInstance(m_allObjects.get(15).object)).getRoot());
+        m_root.getChildren().add(new ObjectEditor(new Interop.MemInstance(Interop.s_ni.MED_DiskLoad("ui/mainmenu/rootwidget"))).getRoot());
 	}
 	
 	private void filterOnPath(String start)

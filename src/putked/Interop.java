@@ -25,12 +25,17 @@ public class Interop
 		
 		// fields
 		public String MED_Field_GetName(Pointer p);
+		public String MED_Field_GetRefType(Pointer p);
 		public int MED_Field_GetType(Pointer p);
 		public boolean MED_Field_IsArray(Pointer p);
+		public boolean MED_Field_IsAuxPtr(Pointer p);
+		public boolean MED_Field_ShowInEditor(Pointer p);
 		
 		public int MED_Field_GetArraySize(Pointer field, Pointer mi);
 		public void MED_Field_SetArrayIndex(Pointer field, int index);
+
 		public String MED_Field_GetString(Pointer field, Pointer mi);
+		public String MED_Field_GetPointer(Pointer field, Pointer mi);
 		public Pointer MED_Field_GetStructInstance(Pointer field, Pointer mi);
 	}
 	
@@ -58,6 +63,11 @@ public class Interop
 			return s_ni.MED_Field_IsArray(_p);
 		}
 		
+		public boolean isAuxPtr()
+		{
+			return s_ni.MED_Field_IsAuxPtr(_p);
+		}	
+		
 		public int getArraySize(MemInstance mi)
 		{
 			return s_ni.MED_Field_GetArraySize(_p, mi._p);
@@ -66,6 +76,21 @@ public class Interop
 		public String getString(MemInstance mi)
 		{
 			return s_ni.MED_Field_GetString(_p, mi._p);
+		}
+		
+		public String getRefType()
+		{
+			return s_ni.MED_Field_GetRefType(_p);
+		}
+		
+		public String getPointer(MemInstance mi)
+		{
+			return s_ni.MED_Field_GetPointer(_p, mi._p);
+		}	
+		
+		public boolean showInEditor()
+		{
+			return s_ni.MED_Field_ShowInEditor(_p);
 		}
 		
 		public MemInstance getStructInstance(MemInstance mi)
