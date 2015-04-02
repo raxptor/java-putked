@@ -37,6 +37,8 @@ public class Interop
 		public String MED_Field_GetString(Pointer field, Pointer mi);
 		public String MED_Field_GetPointer(Pointer field, Pointer mi);
 		public Pointer MED_Field_GetStructInstance(Pointer field, Pointer mi);
+		public int MED_Field_GetInt32(Pointer field, Pointer mi);
+		public float MED_Field_GetFloat(Pointer field, Pointer mi);
 	}
 	
 	public static class Field
@@ -77,6 +79,16 @@ public class Interop
 		{
 			return s_ni.MED_Field_GetString(_p, mi._p);
 		}
+		
+		public float getFloat(MemInstance mi)
+		{
+			return s_ni.MED_Field_GetFloat(_p, mi._p);
+		}
+		
+		public int getInt32(MemInstance mi)
+		{
+			return s_ni.MED_Field_GetInt32(_p, mi._p);
+		}		
 		
 		public String getRefType()
 		{
@@ -151,10 +163,21 @@ public class Interop
 		private NI _i;
 		private HashMap<Pointer, Field> s_fields = new HashMap<>();
 		private HashMap<Pointer, Type> s_types = new HashMap<>();
+		private HashMap<String, MemInstance> s_objs = new HashMap<>();
 		
 		public NIWrap(NI i)
 		{
 			_i = i;
+		}
+		
+		public MemInstance load(String path)
+		{
+			Pointer p = s_ni.MED_DiskLoad(path);
+			if (p != Pointer.NULL)
+			{
+				return new MemInstance(p);
+			}
+			return null;
 		}
 		
 		public Field getFieldWrapper(Pointer p)

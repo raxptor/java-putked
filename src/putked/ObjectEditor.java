@@ -26,6 +26,10 @@ class EditorCreator
 				return new StructEditor(field.getStructInstance(mi), field.getName());
 			case 3:
 				return new PointerEditor(mi, field, index);
+			case 0:
+				return new Int32Editor(mi, field, index);
+			case 9:
+				return new FloatEditor(mi, field, index);
 			default:
 				return new StringEditor(mi, field, index);
 		}
@@ -44,7 +48,6 @@ class EditorCreator
 	{
 		Label lbl = new Label(fi.getName() + "[" + index + "]");
 		lbl.setMinWidth(120);
-		lbl.setMinHeight(24);
 		return lbl;
 	}
 	
@@ -77,6 +80,50 @@ class StringEditor implements FieldEditor
 		TextField tf = new TextField(m_f.getString(m_mi));
 		return tf;
 	}	
+}
+
+class Int32Editor implements FieldEditor
+{
+	MemInstance m_mi;
+	Field m_f;
+	int m_index;
+	
+	public Int32Editor(MemInstance mi, Field f, int index)
+	{
+		m_mi = mi;
+		m_f = f;
+		m_index = index;
+	}
+	
+	@Override
+	public Node createUI()
+	{
+		m_f.setArrayIndex(m_index);
+		TextField tf = new TextField(new Integer(m_f.getInt32(m_mi)).toString());
+		return tf;
+	}
+}
+
+class FloatEditor implements FieldEditor
+{
+	MemInstance m_mi;
+	Field m_f;
+	int m_index;
+	
+	public FloatEditor(MemInstance mi, Field f, int index)
+	{
+		m_mi = mi;
+		m_f = f;
+		m_index = index;
+	}
+	
+	@Override
+	public Node createUI()
+	{
+		m_f.setArrayIndex(m_index);
+		TextField tf = new TextField(new Float(m_f.getFloat(m_mi)).toString());
+		return tf;
+	}
 }
 
 class PointerEditor implements FieldEditor
@@ -114,29 +161,36 @@ class PointerEditor implements FieldEditor
 			String ref = m_f.getPointer(m_mi);
 			if (ref.length() > 0)
 			{
-				MemInstance mi = new MemInstance(Interop.s_ni.MED_DiskLoad(ref));
-				StructEditor se = new StructEditor(mi, "AUX");
-			
-				ArrayList<Node> tmp = new ArrayList<>();
-				tmp.add(se.createUI());
-				VBox aux = new VBox();
-				aux.setFillWidth(true);
-				aux.getChildren().setAll(tmp);
-				aux.setPadding(new Insets(4));
-				aux.setStyle("-fx-border-insets: 1;");
-				aux.setVisible(false);
-				aux.setManaged(false);
-				al.add(aux);
+				MemInstance mi = Interop.s_wrap.load(ref);
+				if (mi != null)
+				{
+					StructEditor se = new StructEditor(mi, "AUX");
 				
-				Button expand = new Button("V");			
-				expand.setOnAction(new EventHandler<ActionEvent>() {
-					@Override
-					public void handle(ActionEvent event) {
-						aux.setVisible(!aux.isVisible());
-						aux.setManaged(aux.isVisible());
-					}
-				});			
-				ptrbar.getChildren().setAll(expand, tf);
+					ArrayList<Node> tmp = new ArrayList<>();
+					tmp.add(se.createUI());
+					VBox aux = new VBox();
+					aux.setFillWidth(true);
+					aux.getChildren().setAll(tmp);
+					aux.setPadding(new Insets(4));
+					aux.setStyle("-fx-border-insets: 1;");
+					aux.setVisible(false);
+					aux.setManaged(false);
+					al.add(aux);
+					
+					Button expand = new Button("V");			
+					expand.setOnAction(new EventHandler<ActionEvent>() {
+						@Override
+						public void handle(ActionEvent event) {
+							aux.setVisible(!aux.isVisible());
+							aux.setManaged(aux.isVisible());
+						}
+					});			
+					ptrbar.getChildren().setAll(expand, tf);
+				}
+				else
+				{
+					tf.setStyle("-fx-background-color: red");
+				}
 			}
 		}
 		
@@ -191,9 +245,8 @@ class ArrayEditor implements FieldEditor
 		for (int i=0;i<size;i++)
 		{
 			Label lbl = new Label(" " + i);
-			lbl.setPrefHeight(25);
 			lbl.setMaxHeight(Double.MAX_VALUE);
-			lbl.setStyle("-fx-background-color: #fee; -fx-border-color: #fbb; -fx-border-insets: 1;");
+			lbl.setStyle("-fx-background-color: #fee; -fx-border-color: #fbb;");
 			lbl.setAlignment(Pos.CENTER);
 			
 			gridpane.add(lbl,  0,  i);
@@ -245,7 +298,6 @@ class StructEditor implements FieldEditor
 			header.setStyle("-fx-background-color: #ddf; -fx-border-insets: 2");
 			header.setAlignment(Pos.CENTER);
 			header.setMaxHeight(Double.MAX_VALUE);
-			header.setPrefHeight(25);
 			nodes.add(header);
 			giveRect = true;
 		}
