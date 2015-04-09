@@ -3,6 +3,7 @@ package putked;
 import java.util.ArrayList;
 
 import putked.Interop.*;
+import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -78,6 +79,10 @@ class StringEditor implements FieldEditor
 	{
 		m_f.setArrayIndex(m_index);
 		TextField tf = new TextField(m_f.getString(m_mi));
+		tf.textProperty().addListener( (obs, oldValue, newValue) -> {
+			m_f.setArrayIndex(m_index);
+			m_f.setString(m_mi, newValue);
+		});
 		return tf;
 	}	
 }
@@ -122,6 +127,18 @@ class FloatEditor implements FieldEditor
 	{
 		m_f.setArrayIndex(m_index);
 		TextField tf = new TextField(new Float(m_f.getFloat(m_mi)).toString());
+		tf.textProperty().addListener( (obs, oldValue, newValue) -> {
+			try 
+			{
+				float f = Float.parseFloat(newValue);
+				m_f.setArrayIndex(m_index);
+				m_f.setFloat(m_mi, f);
+			}
+			catch (NumberFormatException u)
+			{
+				
+			}
+		});		
 		return tf;
 	}
 }
@@ -152,7 +169,19 @@ class PointerEditor implements FieldEditor
 		tf.setDisable(true);
 		HBox.setHgrow(tf,  Priority.ALWAYS);
 		
-		ptrbar.getChildren().setAll(tf);
+		Button clear = new Button("X");
+		Button point = new Button("*");
+		
+		clear.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+            	m_f.setArrayIndex(m_index);
+            	m_f.setPointer(m_mi, "");
+            	tf.textProperty().set("");
+            }
+        });
+		
+		ptrbar.getChildren().setAll(tf, clear, point);
 		al.add(ptrbar);
 		
 		if (m_f.isAuxPtr())
@@ -193,11 +222,10 @@ class PointerEditor implements FieldEditor
 				}
 			}
 		}
-		
+				
 		VBox tot = new VBox();
 		tot.setFillWidth(true);
 		tot.setMaxWidth(Double.MAX_VALUE);
-//		tot.setStyle("-fx-background-color: green");
 		tot.getChildren().setAll(al);
 		return tot;
 	}	

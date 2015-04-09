@@ -94,7 +94,7 @@ public class ObjectLibrary
 		m_filesView.getColumns().add(1, col_type);
 		
 		VBox fbox = new VBox();
-		m_search = new TextField("search");
+		m_search = new TextField();
 		m_search.setMaxWidth(Double.MAX_VALUE);
 		m_search.textProperty().addListener(new ChangeListener<String>() {
 		    @Override

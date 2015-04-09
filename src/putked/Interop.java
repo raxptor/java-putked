@@ -35,10 +35,17 @@ public class Interop
 		public void MED_Field_SetArrayIndex(Pointer field, int index);
 
 		public String MED_Field_GetString(Pointer field, Pointer mi);
+		public void MED_Field_SetString(Pointer field, Pointer mi, String value);
+
 		public String MED_Field_GetPointer(Pointer field, Pointer mi);
+		public void MED_Field_SetPointer(Pointer field, Pointer mi, String value);
+
 		public Pointer MED_Field_GetStructInstance(Pointer field, Pointer mi);
 		public int MED_Field_GetInt32(Pointer field, Pointer mi);
+		public void MED_Field_SetInt32(Pointer field, Pointer mi, int value);
+
 		public float MED_Field_GetFloat(Pointer field, Pointer mi);
+		public void MED_Field_SetFloat(Pointer field, Pointer mi, float value);
 	}
 	
 	public static class Field
@@ -88,7 +95,27 @@ public class Interop
 		public int getInt32(MemInstance mi)
 		{
 			return s_ni.MED_Field_GetInt32(_p, mi._p);
-		}		
+		}
+		
+		public void setString(MemInstance mi, String value)
+		{
+			s_ni.MED_Field_SetString(_p, mi._p, value);
+		}
+		
+		public void setPointer(MemInstance mi, String value)
+		{
+			s_ni.MED_Field_SetPointer(_p, mi._p, value);
+		}
+		
+		public void setFloat(MemInstance mi, float value)
+		{
+			s_ni.MED_Field_SetFloat(_p, mi._p, value);
+		}
+		
+		public void setInt32(MemInstance mi, int value)
+		{
+			s_ni.MED_Field_SetInt32(_p, mi._p, value);
+		}
 		
 		public String getRefType()
 		{
