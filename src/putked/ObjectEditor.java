@@ -30,6 +30,8 @@ class EditorCreator
 			case 0:
 				return new Int32Editor(mi, field, index);
 			// 8 => bool
+			case 8:
+				return new BooleanEditor(mi, field, index);
 			// 7 => file
 			case 9:
 				return new FloatEditor(mi, field, index);
@@ -44,7 +46,6 @@ class EditorCreator
 	{
 		Label lbl = new Label(fi.getName());
 		lbl.setMinWidth(120);
-//		lbl.setMinHeight(24);
 		lbl.setAlignment(Pos.CENTER_LEFT);
 		return lbl;
 	}
@@ -100,6 +101,34 @@ class StringEditor implements FieldEditor
 		return tf;
 	}	
 }
+
+class BooleanEditor implements FieldEditor
+{
+	MemInstance m_mi;
+	Field m_f;
+	int m_index;
+	
+	public BooleanEditor(MemInstance mi, Field f, int index)
+	{
+		m_mi = mi;
+		m_f = f;
+		m_index = index;
+	}
+	
+	@Override
+	public Node createUI()
+	{
+		m_f.setArrayIndex(m_index);
+		CheckBox cb = new CheckBox(m_f.getName());
+		cb.setSelected(m_f.getBool(m_mi));
+		cb.selectedProperty().addListener( (obs, old, ny) -> {
+			m_f.setArrayIndex(m_index);
+			m_f.setBool(m_mi,  ny);
+		});
+		return cb;
+	}	
+}
+
 
 class EnumEditor implements FieldEditor
 {
@@ -235,10 +264,13 @@ class PointerEditor implements FieldEditor
 		HBox ptrbar = new HBox();
 		m_f.setArrayIndex(m_index);
 		
+		ptrbar.setMaxWidth(Double.MAX_VALUE);
+		
 		TextField tf = new TextField(m_f.getPointer(m_mi));
 		tf.setEditable(false);
 		tf.setDisable(true);
-		HBox.setHgrow(tf,  Priority.ALWAYS);
+		tf.setMinWidth(200);
+		HBox.setHgrow(tf, Priority.ALWAYS);
 		
 		Button clear = new Button("X");
 		Button point = new Button("*");
@@ -421,7 +453,7 @@ class ArrayEditor implements FieldEditor
 		gridpane.setMaxWidth(Double.MAX_VALUE);
 		
 		ColumnConstraints column0 = new ColumnConstraints(-1,-1,Double.MAX_VALUE);
-		ColumnConstraints column1 = new ColumnConstraints(100,100,Double.MAX_VALUE);
+		ColumnConstraints column1 = new ColumnConstraints(-1,-1,Double.MAX_VALUE);
 		
 		if (((m_f.getType() == 3 && m_f.isAuxPtr()) || m_f.getType() == 5))
 			column1.setHgrow(Priority.ALWAYS);
@@ -486,8 +518,8 @@ class StructEditor implements FieldEditor
 			FieldEditor fe = EditorCreator.createEditor(m_mi, f, 0, f.isArray());
 			Node ed = fe.createUI();
 			
-			// array or struct or pointer dont get labels.
-			if (f.isArray() || f.getType() == 5)
+			// array or struct or pointer or bools dont get labels.
+			if (f.isArray() || f.getType() == 5 || f.getType() == 8)
 			{
 				nodes.add(ed);
 			}

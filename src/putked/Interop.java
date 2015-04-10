@@ -52,6 +52,9 @@ public class Interop
 
 		public float MED_Field_GetFloat(Pointer field, Pointer mi);
 		public void MED_Field_SetFloat(Pointer field, Pointer mi, float value);
+
+		public int MED_Field_GetBool(Pointer field, Pointer mi);
+		public void MED_Field_SetBool(Pointer field, Pointer mi, int value);
 		
 		public String MED_Field_GetEnumPossibility(Pointer field, int i);
 		public String MED_Field_GetEnum(Pointer field, Pointer mi);
@@ -130,6 +133,16 @@ public class Interop
 		public void setInt32(MemInstance mi, int value)
 		{
 			s_ni.MED_Field_SetInt32(_p, mi._p, value);
+		}
+
+		public void setBool(MemInstance mi, boolean value)
+		{
+			s_ni.MED_Field_SetBool(_p, mi._p, value ? 1 : 0);
+		}
+		
+		public boolean getBool(MemInstance mi)
+		{
+			return s_ni.MED_Field_GetBool(_p, mi._p) != 0;
 		}
 		
 		public String getEnum(MemInstance mi)

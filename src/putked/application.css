@@ -35,3 +35,6 @@
 	-fx-font-size: 12px;
 	-fx-padding: 4;
 }
+.scroll-pane {
+    -fx-background-color:transparent;
+}
