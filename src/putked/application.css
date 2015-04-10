@@ -1,4 +1,3 @@
-/*
 .button
 {
     -fx-background-color: 
@@ -19,9 +18,20 @@
 {
 	-fx-font-size: 12px;
 }
+.float-field
+{
+	-fx-max-width: 120px;
+}
+.int32-field
+{
+	-fx-max-width: 120px;
+}
+.error
+{
+	-fx-background-color: #f44;
+}
 .label
 {
 	-fx-font-size: 12px;
 	-fx-padding: 4;
 }
-*/

@@ -58,7 +58,7 @@ public class ObjectLibrary
         final TreeItem<String> root = new TreeItem<>("/");
         root.setExpanded(true);
         
-        scanDirectory(root, new File("/Users/dannilsson/git/claw-putki/data/objs"), "/");
+        scanDirectory(root, new File("/Users/dannilsson/git/claw-putki/data/objs/"), "");
     
         //Creating a tree table view
         m_dirView = new TreeView<String>(root);

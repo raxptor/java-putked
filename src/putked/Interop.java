@@ -1,5 +1,6 @@
 package putked;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.sun.jna.Library;
@@ -13,16 +14,21 @@ public class Interop
 		public void MED_Initialize(String dllPath, String dataPath);
 
 		public Pointer MED_TypeByIndex(int i);
+		public Pointer MED_TypeByName(String n);
 		
 		// mem objects
 		public Pointer MED_DiskLoad(String path);
 		public Pointer MED_TypeOf(Pointer obj);
+		public String MED_PathOf(Pointer obj);
 		
 		// types
 		public String MED_Type_GetName(Pointer p);
 		public String MED_Type_GetModuleName(Pointer p);	
 		public Pointer MED_Type_GetField(Pointer type, int index);
-		
+		public Pointer MED_Type_GetParentType(Pointer type);
+		int MED_Type_PermitAsAsset(Pointer type);
+		int MED_Type_PermitAsAuxInstance(Pointer type);
+
 		// fields
 		public String MED_Field_GetName(Pointer p);
 		public String MED_Field_GetRefType(Pointer p);
@@ -46,6 +52,12 @@ public class Interop
 
 		public float MED_Field_GetFloat(Pointer field, Pointer mi);
 		public void MED_Field_SetFloat(Pointer field, Pointer mi, float value);
+		
+		public String MED_Field_GetEnumPossibility(Pointer field, int i);
+		public String MED_Field_GetEnum(Pointer field, Pointer mi);
+		public void MED_Field_SetEnum(Pointer field, Pointer mi, String value);
+		
+		public Pointer MED_CreateAuxInstance(Pointer onto, Pointer type);
 	}
 	
 	public static class Field
@@ -117,6 +129,21 @@ public class Interop
 			s_ni.MED_Field_SetInt32(_p, mi._p, value);
 		}
 		
+		public String getEnum(MemInstance mi)
+		{
+			return s_ni.MED_Field_GetEnum(_p,  mi._p);
+		}
+		
+		public String getEnumPossibility(int i)
+		{
+			return s_ni.MED_Field_GetEnumPossibility(_p,  i);
+		}
+		
+		public void setEnum(MemInstance mi, String value)
+		{
+			s_ni.MED_Field_SetEnum(_p,  mi._p, value);
+		}
+		
 		public String getRefType()
 		{
 			return s_ni.MED_Field_GetRefType(_p);
@@ -140,7 +167,7 @@ public class Interop
 		public int getType()
 		{
 			return s_ni.MED_Field_GetType(_p);
-		}
+		}		
 	}
 	
 	public static class Type 
@@ -166,6 +193,44 @@ public class Interop
 		{
 			return s_wrap.getFieldWrapper(s_ni.MED_Type_GetField(_p,  i));
 		}
+		
+		Type getParent()
+		{
+			Pointer p = s_ni.MED_Type_GetParentType(_p);
+			System.out.println("Parent to " + getName() + " is " + p);
+			if (p == Pointer.NULL)
+				return null;
+			return s_wrap.getTypeWrapper(p);
+		}
+		
+		public boolean permitAsAuxInstance()
+		{
+			return s_ni.MED_Type_PermitAsAuxInstance(_p) != 0;
+		}
+		
+		public boolean premitAsAsset()
+		{
+			return s_ni.MED_Type_PermitAsAsset(_p) != 0;
+		}
+		
+		public boolean hasParent(Type t)
+		{
+			String name = t.getName();
+			Type test = this;
+			while (test != null)
+			{
+				System.out.println("HasParent " + name + " ? [" + test.getName() + "]");
+				if (test.getName().equals(name))
+				{
+					System.out.println(name + " => yes");
+					return true;
+				}
+				test = test.getParent();
+			}
+			System.out.println(name + " => no");
+			return false;
+		}
+		
 	}
 		
 	public static class MemInstance
@@ -183,6 +248,16 @@ public class Interop
 		{
 			return _type;
 		}
+		
+		public MemInstance createAuxInstance(Type t)
+		{
+			return new MemInstance(s_ni.MED_CreateAuxInstance(_p,  t._p));
+		}		
+		
+		public String getPath()
+		{
+			return s_ni.MED_PathOf(_p);
+		}
 	}
 
 	public static class NIWrap 
@@ -195,6 +270,26 @@ public class Interop
 		public NIWrap(NI i)
 		{
 			_i = i;
+		}
+		
+		public ArrayList<Type> getAllTypes()
+		{
+			ArrayList<Type> allTypes = new ArrayList<Type>();
+			int idx = 0;
+			while (true)
+			{
+				Pointer t = _i.MED_TypeByIndex(idx);
+				if (t == Pointer.NULL)
+					break;
+				allTypes.add(getTypeWrapper(t));
+				idx++;
+			}			
+			return allTypes;
+		}
+		
+		public Type getTypeByName(String name)
+		{
+			return getTypeWrapper(_i.MED_TypeByName(name));
 		}
 		
 		public MemInstance load(String path)

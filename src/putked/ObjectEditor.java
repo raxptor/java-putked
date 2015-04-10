@@ -29,8 +29,12 @@ class EditorCreator
 				return new PointerEditor(mi, field, index);
 			case 0:
 				return new Int32Editor(mi, field, index);
+			// 8 => bool
+			// 7 => file
 			case 9:
 				return new FloatEditor(mi, field, index);
+			case 10:
+				return new EnumEditor(mi, field, index);
 			default:
 				return new StringEditor(mi, field, index);
 		}
@@ -87,6 +91,47 @@ class StringEditor implements FieldEditor
 	}	
 }
 
+class EnumEditor implements FieldEditor
+{
+	MemInstance m_mi;
+	Field m_f;
+	int m_index;
+	
+	public EnumEditor(MemInstance mi, Field f, int index)
+	{
+		m_mi = mi;
+		m_f = f;
+		m_index = index;
+	}
+	
+	@Override
+	public Node createUI()
+	{
+		m_f.setArrayIndex(m_index);
+		ComboBox<String> cb = new ComboBox<>();
+		ArrayList<String> values = new ArrayList<>();
+		
+		int i=0;
+		while (true)
+		{
+			String s = m_f.getEnumPossibility(i);
+			if (s == null)
+				break;
+			values.add(s);
+			i++;
+		}
+
+		cb.getItems().setAll(values);
+		cb.setValue(m_f.getEnum(m_mi));
+		cb.valueProperty().addListener( (obs, oldValue, newValue) -> {
+			m_f.setArrayIndex(m_index);			
+			m_f.setEnum(m_mi,  newValue);
+		});
+
+		return cb;
+	}	
+}
+
 class Int32Editor implements FieldEditor
 {
 	MemInstance m_mi;
@@ -105,6 +150,20 @@ class Int32Editor implements FieldEditor
 	{
 		m_f.setArrayIndex(m_index);
 		TextField tf = new TextField(new Integer(m_f.getInt32(m_mi)).toString());
+		tf.getStyleClass().add("int32-field");
+		tf.textProperty().addListener( (obs, oldValue, newValue) -> {
+			try 
+			{
+				int val = Integer.parseInt(newValue);
+				m_f.setArrayIndex(m_index);
+				m_f.setInt32(m_mi, val);
+				tf.getStyleClass().remove("error");
+			}
+			catch (NumberFormatException u)
+			{
+				tf.getStyleClass().add("error");
+			}
+		});
 		return tf;
 	}
 }
@@ -127,16 +186,18 @@ class FloatEditor implements FieldEditor
 	{
 		m_f.setArrayIndex(m_index);
 		TextField tf = new TextField(new Float(m_f.getFloat(m_mi)).toString());
+		tf.getStyleClass().add("float-field");
 		tf.textProperty().addListener( (obs, oldValue, newValue) -> {
 			try 
 			{
 				float f = Float.parseFloat(newValue);
 				m_f.setArrayIndex(m_index);
 				m_f.setFloat(m_mi, f);
+				tf.getStyleClass().remove("error");
 			}
 			catch (NumberFormatException u)
 			{
-				
+				tf.getStyleClass().add("error");
 			}
 		});		
 		return tf;
@@ -159,8 +220,8 @@ class PointerEditor implements FieldEditor
 	@Override
 	public Node createUI() 
 	{
-		ArrayList<Node> al = new ArrayList<>();
-		
+		VBox tot = new VBox();
+
 		HBox ptrbar = new HBox();
 		m_f.setArrayIndex(m_index);
 		
@@ -172,17 +233,47 @@ class PointerEditor implements FieldEditor
 		Button clear = new Button("X");
 		Button point = new Button("*");
 		
-		clear.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
+		ptrbar.getChildren().setAll(tf, clear, point);
+		tot.getChildren().setAll(ptrbar);
+		
+		clear.setOnAction( (evt) -> {
             	m_f.setArrayIndex(m_index);
             	m_f.setPointer(m_mi, "");
             	tf.textProperty().set("");
-            }
+            	tot.getChildren().setAll(ptrbar);
+            	ptrbar.getChildren().setAll(tf, point);
         });
 		
-		ptrbar.getChildren().setAll(tf, clear, point);
-		al.add(ptrbar);
+		point.setOnAction( (evt) -> {
+			System.out.println("Asknig for type for " + m_f.getRefType());
+			Interop.Type t = Main.s_instance.askForSubType(Interop.s_wrap.getTypeByName(m_f.getRefType()), true);
+			if (t != null)
+			{
+				MemInstance naux = m_mi.createAuxInstance(t);
+				System.out.println("Created " + naux.getPath());
+
+				m_f.setArrayIndex(m_index);
+				m_f.setPointer(m_mi, naux.getPath());
+				tf.textProperty().set(naux.getPath());
+				
+				VBox aux = makeObjNode(naux);					
+				aux.setVisible(true);
+				aux.setManaged(true);
+				
+				Button expand = new Button("V");			
+				expand.setOnAction(new EventHandler<ActionEvent>() {
+					@Override
+					public void handle(ActionEvent event) {
+						aux.setVisible(!aux.isVisible());
+						aux.setManaged(aux.isVisible());
+					}
+				});
+				
+				// configure for this
+				ptrbar.getChildren().setAll(expand, tf, clear, point);
+				tot.getChildren().setAll(ptrbar, aux);				
+			}
+		});
 		
 		if (m_f.isAuxPtr())
 		{
@@ -193,19 +284,8 @@ class PointerEditor implements FieldEditor
 				MemInstance mi = Interop.s_wrap.load(ref);
 				if (mi != null)
 				{
-					StructEditor se = new StructEditor(mi, "AUX");
-				
-					ArrayList<Node> tmp = new ArrayList<>();
-					tmp.add(se.createUI());
-					VBox aux = new VBox();
-					aux.setFillWidth(true);
-					aux.getChildren().setAll(tmp);
-					aux.setPadding(new Insets(4));
-					aux.setStyle("-fx-border-insets: 1;");
-					aux.setVisible(false);
-					aux.setManaged(false);
-					al.add(aux);
-					
+					VBox aux = makeObjNode(mi);					
+		
 					Button expand = new Button("V");			
 					expand.setOnAction(new EventHandler<ActionEvent>() {
 						@Override
@@ -213,8 +293,11 @@ class PointerEditor implements FieldEditor
 							aux.setVisible(!aux.isVisible());
 							aux.setManaged(aux.isVisible());
 						}
-					});			
-					ptrbar.getChildren().setAll(expand, tf);
+					});
+					
+					// configure for this
+					ptrbar.getChildren().setAll(expand, tf, clear, point);
+					tot.getChildren().setAll(ptrbar, aux);
 				}
 				else
 				{
@@ -222,13 +305,26 @@ class PointerEditor implements FieldEditor
 				}
 			}
 		}
-				
-		VBox tot = new VBox();
+
 		tot.setFillWidth(true);
 		tot.setMaxWidth(Double.MAX_VALUE);
-		tot.getChildren().setAll(al);
 		return tot;
 	}	
+	
+	private VBox makeObjNode(MemInstance mi)
+	{
+		VBox aux = new VBox();
+		StructEditor se = new StructEditor(mi, "AUX");
+		ArrayList<Node> tmp = new ArrayList<>();
+		tmp.add(se.createUI());
+		aux.setFillWidth(true);
+		aux.getChildren().setAll(tmp);
+		aux.setPadding(new Insets(4));
+		aux.setStyle("-fx-border-insets: 1;");
+		aux.setVisible(false);
+		aux.setManaged(false);
+		return aux;
+	}
 }
 
 class ArrayEditor implements FieldEditor
@@ -265,7 +361,10 @@ class ArrayEditor implements FieldEditor
 		
 		ColumnConstraints column0 = new ColumnConstraints(-1,-1,Double.MAX_VALUE);
 		ColumnConstraints column1 = new ColumnConstraints(100,100,Double.MAX_VALUE);
-	    column1.setHgrow(Priority.SOMETIMES);
+		
+		if (((m_f.getType() == 3 && m_f.isAuxPtr()) || m_f.getType() == 5))
+			column1.setHgrow(Priority.ALWAYS);
+		
 	    gridpane.getColumnConstraints().setAll(column0, column1);
 	     
 		int size = m_f.getArraySize(m_mi);

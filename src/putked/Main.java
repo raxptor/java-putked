@@ -3,16 +3,26 @@ package putked;
 import java.util.ArrayList;
 
 import javafx.application.Application;
+import javafx.beans.InvalidationListener;
+import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
  
 public class Main extends Application 
 {
 	public static Interop.NI s_interop;
 	public static Main s_instance;
+	
+	private TabPane m_pane;
 	
     public static void main(String[] args) 
     {
@@ -26,12 +36,70 @@ public class Main extends Application
     		return;
    
     	PropertyEditor e = new PropertyEditor();
-    	Stage stage = new Stage();
-    	Scene scene = new Scene(e.createEditor(mi), 800, 600);
-    	stage.setTitle(path);
-        scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());       
-        stage.setScene(scene);
-        stage.show();
+    	addTab(e.createEditor(mi), path);
+    }
+    
+    public Stage makeDialogStage(javafx.scene.Scene scene)
+    {
+    	Stage s = new Stage();
+    	s.initModality(Modality.WINDOW_MODAL);
+    	s.setTitle("Question");
+    	s.setScene(scene);
+    	return s;    	
+    }
+    
+    public Interop.Type askForSubType(Interop.Type p, boolean asAux)
+    {
+    	ArrayList<Interop.Type> all = Interop.s_wrap.getAllTypes();
+    	ObservableList<String> out = FXCollections.observableArrayList();
+    	for (Interop.Type t : all)
+    	{
+    		if (t.hasParent(p) && (!asAux || t.permitAsAuxInstance()))
+    			out.add(t.getName());
+    	}
+    	
+    	if (out.size() == 1)
+    		return Interop.s_wrap.getTypeByName(out.get(0));
+    	
+    	ListView<String> opts = new ListView<>();
+    	opts.setItems(out);
+    	opts.getSelectionModel().select(0);
+
+    	VBox box = new VBox();
+    	Button ok = new Button("OK");
+    	Button cancel = new Button("Cancel");
+    	ok.setMaxWidth(Double.MAX_VALUE);
+    	cancel.setMaxWidth(Double.MAX_VALUE);
+    	
+    	class Tmp {
+    		Interop.Type out = null;
+    	};
+    	
+    	final Tmp holder = new Tmp();
+
+    	Scene scene = new Scene(box, 300, 400);
+    	Stage stage = makeDialogStage(scene);
+   	
+    	ok.setOnAction((evt) -> {
+    		holder.out = Interop.s_wrap.getTypeByName(opts.getSelectionModel().getSelectedItem());
+    		stage.hide();
+    	});
+
+    	cancel.setOnAction( (evt) -> {
+    		stage.hide();
+    	});
+
+    	box.getChildren().setAll(opts, ok, cancel);    	
+    	stage.showAndWait();
+ 	
+		return holder.out;
+    }
+    
+    public void addTab(Node n, String title)
+    {
+    	Tab t = new Tab(title);
+    	t.setContent(n);
+    	m_pane.getTabs().add(t);
     }
     
     @Override
@@ -41,23 +109,14 @@ public class Main extends Application
     	s_interop = Interop.Load("/tmp/libputked-java-interop.dylib");
     	String base = "/Users/dannilsson/git/claw-putki/";
     	s_interop.MED_Initialize(base + "/build/libclaw-data-dll.dylib", base);
-    	/*
-    	for (int i=0;true;i++)
-    	{
-    		Pointer p = s_interop.MED_TypeByIndex(i);
-    		if (p == Pointer.NULL)
-    			break;
-    		
-    		System.out.println("Loaded type [" + s_interop.MED_Type_GetName(p) + "] [" + s_interop.MED_Type_GetModuleName(p) + "]"); 	
-    	}
-    	*/
+
     	stage.setTitle("PutkEd");
     	
     	SplitPane pane = new SplitPane();
-    	Pane top = new Pane();
-    	
+    	m_pane = new TabPane();
+    	    	
     	pane.orientationProperty().set(Orientation.VERTICAL);
-    	pane.getItems().add(top);
+    	pane.getItems().add(m_pane);
     	pane.getItems().add(new ObjectLibrary().getRoot());
     	
         final Scene scene = new Scene(pane, 800, 400);
