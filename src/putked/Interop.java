@@ -20,7 +20,7 @@ public class Interop
 		public Pointer MED_DiskLoad(String path);
 		public Pointer MED_TypeOf(Pointer obj);
 		public String MED_PathOf(Pointer obj);
-		
+				
 		// types
 		public String MED_Type_GetName(Pointer p);
 		public String MED_Type_GetModuleName(Pointer p);	
@@ -56,6 +56,9 @@ public class Interop
 		public String MED_Field_GetEnumPossibility(Pointer field, int i);
 		public String MED_Field_GetEnum(Pointer field, Pointer mi);
 		public void MED_Field_SetEnum(Pointer field, Pointer mi, String value);
+	
+		public void MED_Field_ArrayInsert(Pointer field, Pointer mi);
+		public void MED_Field_ArrayErase(Pointer field, Pointer mi);
 		
 		public Pointer MED_CreateAuxInstance(Pointer onto, Pointer type);
 	}
@@ -164,6 +167,16 @@ public class Interop
 			return new MemInstance(s_ni.MED_Field_GetStructInstance(_p, mi._p));
 		}
 		
+		public void arrayInsert(MemInstance mi)
+		{
+			s_ni.MED_Field_ArrayInsert(_p,  mi._p);
+		}
+		
+		public void arrayErase(MemInstance mi)
+		{
+			s_ni.MED_Field_ArrayErase(_p,  mi._p);
+		}
+		
 		public int getType()
 		{
 			return s_ni.MED_Field_GetType(_p);
@@ -197,7 +210,6 @@ public class Interop
 		Type getParent()
 		{
 			Pointer p = s_ni.MED_Type_GetParentType(_p);
-			System.out.println("Parent to " + getName() + " is " + p);
 			if (p == Pointer.NULL)
 				return null;
 			return s_wrap.getTypeWrapper(p);
@@ -219,18 +231,14 @@ public class Interop
 			Type test = this;
 			while (test != null)
 			{
-				System.out.println("HasParent " + name + " ? [" + test.getName() + "]");
 				if (test.getName().equals(name))
 				{
-					System.out.println(name + " => yes");
 					return true;
 				}
 				test = test.getParent();
 			}
-			System.out.println(name + " => no");
 			return false;
 		}
-		
 	}
 		
 	public static class MemInstance

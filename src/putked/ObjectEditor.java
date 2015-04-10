@@ -63,6 +63,16 @@ class EditorCreator
 		else
 			return makeFieldLabel(fi);
 	}
+	
+	public static String makeInlineAuxTitle(MemInstance mi)
+	{
+		return mi.getPath() + " (" + mi.getType().getName() + ")";
+	}
+	
+	public static String makeInlineTitle(MemInstance mi)
+	{
+		return mi.getPath() + " (" + mi.getType().getName() + ")";
+	}
 }
 
 class StringEditor implements FieldEditor
@@ -233,7 +243,7 @@ class PointerEditor implements FieldEditor
 		Button clear = new Button("X");
 		Button point = new Button("*");
 		
-		ptrbar.getChildren().setAll(tf, clear, point);
+		ptrbar.getChildren().setAll(tf, point, clear);
 		tot.getChildren().setAll(ptrbar);
 		
 		clear.setOnAction( (evt) -> {
@@ -245,33 +255,47 @@ class PointerEditor implements FieldEditor
         });
 		
 		point.setOnAction( (evt) -> {
-			System.out.println("Asknig for type for " + m_f.getRefType());
-			Interop.Type t = Main.s_instance.askForSubType(Interop.s_wrap.getTypeByName(m_f.getRefType()), true);
-			if (t != null)
-			{
-				MemInstance naux = m_mi.createAuxInstance(t);
-				System.out.println("Created " + naux.getPath());
 
-				m_f.setArrayIndex(m_index);
-				m_f.setPointer(m_mi, naux.getPath());
-				tf.textProperty().set(naux.getPath());
-				
-				VBox aux = makeObjNode(naux);					
-				aux.setVisible(true);
-				aux.setManaged(true);
-				
-				Button expand = new Button("V");			
-				expand.setOnAction(new EventHandler<ActionEvent>() {
-					@Override
-					public void handle(ActionEvent event) {
-						aux.setVisible(!aux.isVisible());
-						aux.setManaged(aux.isVisible());
-					}
-				});
-				
-				// configure for this
-				ptrbar.getChildren().setAll(expand, tf, clear, point);
-				tot.getChildren().setAll(ptrbar, aux);				
+			if (m_f.isAuxPtr())
+			{
+				Interop.Type t = Main.s_instance.askForSubType(Interop.s_wrap.getTypeByName(m_f.getRefType()), true);
+				if (t != null)
+				{
+					MemInstance naux = m_mi.createAuxInstance(t);
+	
+					m_f.setArrayIndex(m_index);
+					m_f.setPointer(m_mi, naux.getPath());
+					tf.textProperty().set(EditorCreator.makeInlineAuxTitle(naux));
+					
+					VBox aux = makeObjNode(naux);					
+					aux.setVisible(true);
+					aux.setManaged(true);
+					
+					Button expand = new Button("V");			
+					expand.setOnAction(new EventHandler<ActionEvent>() {
+						@Override
+						public void handle(ActionEvent event) {
+							aux.setVisible(!aux.isVisible());
+							aux.setManaged(aux.isVisible());
+						}
+					});
+					
+					// configure for this
+					ptrbar.getChildren().setAll(expand, tf, point, clear);
+					tot.getChildren().setAll(ptrbar, aux);				
+				}
+			}
+			else
+			{
+				String path = Main.s_instance.askForInstancePath(Interop.s_wrap.getTypeByName(m_f.getRefType()));
+				if (path != null)
+				{
+					m_f.setArrayIndex(m_index);
+					m_f.setPointer(m_mi, path);
+					tf.textProperty().set(path);
+					ptrbar.getChildren().setAll(tf, point, clear);
+					tot.getChildren().setAll(ptrbar);
+				}
 			}
 		});
 		
@@ -296,12 +320,14 @@ class PointerEditor implements FieldEditor
 					});
 					
 					// configure for this
-					ptrbar.getChildren().setAll(expand, tf, clear, point);
+					ptrbar.getChildren().setAll(expand, tf, point, clear);
 					tot.getChildren().setAll(ptrbar, aux);
+					tf.getStyleClass().remove("error");
+					tf.textProperty().set(EditorCreator.makeInlineAuxTitle(mi));
 				}
 				else
 				{
-					tf.setStyle("-fx-background-color: red");
+					tf.getStyleClass().add("error");
 				}
 			}
 		}
@@ -331,6 +357,8 @@ class ArrayEditor implements FieldEditor
 {
 	MemInstance m_mi;
 	Field m_f;
+	ArrayList<Node> m_editors;
+	VBox m_box;
 	
 	public ArrayEditor(MemInstance mi, Field field)
 	{
@@ -341,21 +369,54 @@ class ArrayEditor implements FieldEditor
 	@Override
 	public Node createUI() 
 	{
-		ArrayList<Node> out = new ArrayList<>();
-
-		/*
-		HBox hdr = new HBox();
-		hdr.getChildren().add(EditorCreator.makeFieldLabel(m_f));
-		hdr.getChildren().add(new Label("Array of " + m_f.getArraySize(m_mi) + " item(s)"));
-		out.add(hdr);
-		*/
-		
+	    m_editors = new ArrayList<>();
+		int size = m_f.getArraySize(m_mi);		
+		for (int i=0;i<size;i++)
+		{
+			FieldEditor fe = EditorCreator.createEditor(m_mi, m_f, i, false);
+			m_editors.add(fe.createUI());
+		}	
+		m_box = new VBox();
+		rebuild();
+		return m_box;
+	}
+	
+	private void rebuild()
+	{	
 		Label hl = new Label(m_f.getName() + ": Array of " + m_f.getArraySize(m_mi) + " items(s)");
 		hl.setMaxWidth(Double.MAX_VALUE);
 		hl.setAlignment(Pos.BASELINE_CENTER);
 		hl.setPrefHeight(30);
-		out.add(hl);
 		
+		Button add = new Button("+" + m_f.getName());
+		
+		add.setOnAction( (evt) -> {
+			int newIndex = m_f.getArraySize(m_mi);
+			m_f.setArrayIndex(newIndex);
+			m_f.arrayInsert(m_mi);
+			FieldEditor fe = EditorCreator.createEditor(m_mi, m_f, newIndex, false);
+			m_editors.add(fe.createUI());
+			rebuild();
+		});		
+	
+		m_box.getChildren().setAll(hl, buildGridPane(), add);
+		m_box.setFillWidth(true);
+	}
+	
+	private Button mkRemoveBtn(int idx)
+	{
+		Button rm = new Button("-");
+		rm.setOnAction((v) -> {
+			m_f.setArrayIndex(idx);
+			m_f.arrayErase(m_mi);
+			m_editors.remove(idx);
+			rebuild();
+		});
+		return rm;
+	}
+	
+	private GridPane buildGridPane()
+	{
 		GridPane gridpane = new GridPane();
 		gridpane.setMaxWidth(Double.MAX_VALUE);
 		
@@ -366,36 +427,22 @@ class ArrayEditor implements FieldEditor
 			column1.setHgrow(Priority.ALWAYS);
 		
 	    gridpane.getColumnConstraints().setAll(column0, column1);
-	     
-		int size = m_f.getArraySize(m_mi);
-		
-		for (int i=0;i<size;i++)
-		{
+	    for (int i=0;i<m_editors.size();i++)
+	    {
 			Label lbl = new Label(" " + i);
 			lbl.setMaxHeight(Double.MAX_VALUE);
-			lbl.setStyle("-fx-background-color: #fee; -fx-border-color: #fbb;");
 			lbl.setAlignment(Pos.CENTER);
 			
 			gridpane.add(lbl,  0,  i);
 			GridPane.setValignment(lbl, VPos.TOP);
-			FieldEditor fe = EditorCreator.createEditor(m_mi, m_f, i, false);
-			Node ed = fe.createUI();
-			gridpane.add(ed,  1,  i);
+			gridpane.add(m_editors.get(i),  1,  i);
 			
-			Button rm_btn = new Button("-");
+			Button rm_btn = mkRemoveBtn(i);
 			gridpane.add(rm_btn, 2, i);		
 			GridPane.setValignment(rm_btn,  VPos.TOP);
 		}
 		
-		out.add(gridpane);
-		
-		Button add = new Button("+" + m_f.getName());
-		out.add(add);
-		
-		VBox box = new VBox();
-		box.getChildren().setAll(out);
-		box.setFillWidth(true);
-		return box;
+		return gridpane;
 	}
 }
 
@@ -438,7 +485,6 @@ class StructEditor implements FieldEditor
 			
 			FieldEditor fe = EditorCreator.createEditor(m_mi, f, 0, f.isArray());
 			Node ed = fe.createUI();
-			
 			
 			// array or struct or pointer dont get labels.
 			if (f.isArray() || f.getType() == 5)

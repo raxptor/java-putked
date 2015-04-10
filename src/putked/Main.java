@@ -23,6 +23,7 @@ public class Main extends Application
 	public static Main s_instance;
 	
 	private TabPane m_pane;
+	public ObjectLibrary m_objectLibrary;
 	
     public static void main(String[] args) 
     {
@@ -46,6 +47,53 @@ public class Main extends Application
     	s.setTitle("Question");
     	s.setScene(scene);
     	return s;    	
+    }
+    
+    public String askForInstancePath(Interop.Type p)
+    {
+    	ObservableList<String> all = FXCollections.observableArrayList();
+    	ObservableList<ObjectLibrary.ObjEntry> objs = m_objectLibrary.getAllObjects();
+    	for (ObjectLibrary.ObjEntry o : objs)
+    	{
+    		Interop.Type t = Interop.s_wrap.getTypeWrapper(
+    			Interop.s_ni.MED_TypeOf(o.object)
+    		);
+    		
+    		if (t.hasParent(p))
+    			all.add(o.path);
+    	}
+    	
+       	ListView<String> opts = new ListView<>();
+    	opts.setItems(all);
+    	opts.getSelectionModel().select(0);
+
+    	VBox box = new VBox();
+    	Button ok = new Button("OK");
+    	Button cancel = new Button("Cancel");
+    	ok.setMaxWidth(Double.MAX_VALUE);
+    	cancel.setMaxWidth(Double.MAX_VALUE);
+    	
+    	class Tmp {
+    		String out = null;
+    	};
+    	
+    	final Tmp holder = new Tmp();
+
+    	Scene scene = new Scene(box, 300, 400);
+    	Stage stage = makeDialogStage(scene);
+   	
+    	ok.setOnAction((evt) -> {
+    		holder.out = opts.getSelectionModel().getSelectedItem();
+    		stage.hide();
+    	});
+
+    	cancel.setOnAction( (evt) -> {
+    		stage.hide();
+    	});
+
+    	box.getChildren().setAll(opts, ok, cancel);    	
+    	stage.showAndWait();
+		return holder.out;
     }
     
     public Interop.Type askForSubType(Interop.Type p, boolean asAux)
@@ -114,10 +162,12 @@ public class Main extends Application
     	
     	SplitPane pane = new SplitPane();
     	m_pane = new TabPane();
+    	
+    	m_objectLibrary = new ObjectLibrary();
     	    	
     	pane.orientationProperty().set(Orientation.VERTICAL);
     	pane.getItems().add(m_pane);
-    	pane.getItems().add(new ObjectLibrary().getRoot());
+    	pane.getItems().add(m_objectLibrary.getRoot());
     	
         final Scene scene = new Scene(pane, 800, 400);
         scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());       

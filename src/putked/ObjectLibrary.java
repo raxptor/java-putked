@@ -23,7 +23,7 @@ import com.sun.jna.Pointer;
 
 public class ObjectLibrary 
 {
-	class ObjEntry
+	public class ObjEntry
 	{
 		public String name;
 		public String path;
@@ -128,6 +128,11 @@ public class ObjectLibrary
                 }
             }
         });
+	}
+	
+	public ObservableList<ObjEntry> getAllObjects()
+	{
+		return m_allObjects;
 	}
 	
 	private void updateFilter()
