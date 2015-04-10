@@ -1,6 +1,7 @@
 package putked;
 
 import java.util.ArrayList;
+import java.util.ServiceLoader;
 
 import javafx.application.Application;
 import javafx.beans.InvalidationListener;
@@ -55,11 +56,7 @@ public class Main extends Application
     	ObservableList<ObjectLibrary.ObjEntry> objs = m_objectLibrary.getAllObjects();
     	for (ObjectLibrary.ObjEntry o : objs)
     	{
-    		Interop.Type t = Interop.s_wrap.getTypeWrapper(
-    			Interop.s_ni.MED_TypeOf(o.object)
-    		);
-    		
-    		if (t.hasParent(p))
+    		if (o.type != null && o.type.hasParent(p))
     			all.add(o.path);
     	}
     	
@@ -157,6 +154,11 @@ public class Main extends Application
     	s_interop = Interop.Load("/tmp/libputked-java-interop.dylib");
     	String base = "/Users/dannilsson/git/claw-putki/";
     	s_interop.MED_Initialize(base + "/build/libclaw-data-dll.dylib", base);
+    	
+    	System.out.println("Loading extensions...");
+       	ServiceLoader<putked.EditorTypeService> etsLoader = ServiceLoader.load(putked.EditorTypeService.class);
+       	for (putked.EditorTypeService service : etsLoader)
+       		service.register();
 
     	stage.setTitle("PutkEd");
     	

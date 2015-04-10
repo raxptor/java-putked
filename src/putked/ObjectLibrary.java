@@ -19,7 +19,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import javafx.scene.input.*;
-import com.sun.jna.Pointer;
 
 public class ObjectLibrary 
 {
@@ -27,8 +26,8 @@ public class ObjectLibrary
 	{
 		public String name;
 		public String path;
-		public String type;
-		public Pointer object;
+		public Interop.Type type;
+		public Interop.MemInstance mi;
 	};
 	
 	class DirEntry
@@ -79,12 +78,9 @@ public class ObjectLibrary
 		 
 		col_type.setCellValueFactory(new Callback<CellDataFeatures<ObjEntry, String>, ObservableValue<String>>() {
 		    public ObservableValue<String> call(CellDataFeatures<ObjEntry, String> p) {
-		        // p.getValue() returns the Person instance for a particular TableView row
-		    	if (p.getValue().object != Pointer.NULL)
-		    	{
-		    		Pointer type = Main.s_interop.MED_TypeOf(p.getValue().object);
-			        return new ReadOnlyStringWrapper(Main.s_interop.MED_Type_GetName(type));
-		    	}
+		    	Interop.Type t = p.getValue().type;
+		    	if (t != null)
+			        return new ReadOnlyStringWrapper(t.getName());
 		        return new ReadOnlyStringWrapper("<NULL>");
 		    }
 		});
@@ -140,7 +136,7 @@ public class ObjectLibrary
         m_filteredData.setPredicate(obj -> {
         	String s = m_search.getText();
         	if (obj.path.startsWith(m_dirFilterString))
-        		return s.isEmpty() || obj.path.contains(s) || obj.type.contains(s);
+        		return s.isEmpty() || obj.path.contains(s) || obj.type.getName().contains(s);
         	return false;
         });   
 	}
@@ -190,13 +186,9 @@ public class ObjectLibrary
 				ObjEntry oe = new ObjEntry();
 				oe.name = name.substring(0, name.length() - ending.length());
 				oe.path = path + oe.name;
-				oe.object = Main.s_interop.MED_DiskLoad(oe.path);
-				if (oe.object != Pointer.NULL)
-				{
-					Pointer pt = Main.s_interop.MED_TypeOf(oe.object);
-					if (pt != Pointer.NULL)
-						oe.type = Main.s_interop.MED_Type_GetName(pt);
-				}
+				oe.mi = Interop.s_wrap.load(oe.path);
+				if (oe.mi != null)
+					oe.type = oe.mi.getType();
 				de.entries.add(oe);
 				m_allObjects.add(oe);
 			}
