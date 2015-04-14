@@ -1,10 +1,11 @@
 package putked;
 
-import javafx.scene.Parent;
+import putked.Interop.MemInstance;
+import javafx.scene.Node;
 
-public interface Editor
+public interface Editor 
 {
-	int getPriority();
-	String getDescription();
-	Parent createEditor(Interop.MemInstance object);
+	String getName();
+	boolean canEdit(Interop.Type type);
+	Node createUI(MemInstance mi);
 }

@@ -1,6 +1,8 @@
 package putked;
 
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.ServiceLoader;
 
 import javafx.application.Application;
@@ -17,28 +19,50 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
- 
+
 public class Main extends Application 
 {
-	public static Interop.NI s_interop;
 	public static Main s_instance;
 	
 	private TabPane m_pane;
 	public ObjectLibrary m_objectLibrary;
-	
+	private static ArrayList<Editor> m_editors = new ArrayList<>();
+		
     public static void main(String[] args) 
     {
+    	initEditor();
         Application.launch(args);
+    }
+    
+    public static void initEditor()
+    {
+    	addEditor(new PropertyEditor()); 	
+    }
+    
+    public static void addEditor(Editor e)
+    {
+    	m_editors.add(e);
+    }
+    
+    public static ArrayList<Editor> getEditors()
+    {
+    	return m_editors;
     }
     
     public void startEditing(String path)
     {
+    	startEditing(path, new PropertyEditor());
+    }
+    
+    public void startEditing(String path, Editor editor)
+    {
     	Interop.MemInstance mi = Interop.s_wrap.load(path);
     	if (mi == null)
     		return;
+    	if (!editor.canEdit(mi.getType()))
+    		return;
    
-    	PropertyEditor e = new PropertyEditor();
-    	addTab(e.createEditor(mi), path);
+    	addTab(editor.createUI(mi), path);
     }
     
     public Stage makeDialogStage(javafx.scene.Scene scene)
@@ -145,20 +169,21 @@ public class Main extends Application
     	Tab t = new Tab(title);
     	t.setContent(n);
     	m_pane.getTabs().add(t);
+    	m_pane.getSelectionModel().select(t);
     }
     
     @Override
     public void start(Stage stage) 
     {
     	s_instance = this;
-    	s_interop = Interop.Load("/tmp/libputked-java-interop.dylib");
+    	if (!Interop.Load("/tmp/libputked-java-interop.dylib"))
+    	{
+    		System.out.println("Could not load interop lib");
+    		return;
+    	}
+
     	String base = "/Users/dannilsson/git/claw-putki/";
-    	s_interop.MED_Initialize(base + "/build/libclaw-data-dll.dylib", base);
-    	
-    	System.out.println("Loading extensions...");
-       	ServiceLoader<putked.EditorTypeService> etsLoader = ServiceLoader.load(putked.EditorTypeService.class);
-       	for (putked.EditorTypeService service : etsLoader)
-       		service.register();
+    	Interop.Initialize(base + "/build/libclaw-data-dll.dylib", base);
 
     	stage.setTitle("PutkEd");
     	

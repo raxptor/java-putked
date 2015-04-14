@@ -22,12 +22,17 @@ public class PropertyEditor implements Editor
 		return 0;
 	}
 	
-	public String getDescription()
+	public String getName()
 	{
 		return "Property Editor";
 	}
 	
-	public Parent createEditor(Interop.MemInstance object)
+	public boolean canEdit(Interop.Type tp)
+	{
+		return true;
+	}
+	
+	public Node createUI(Interop.MemInstance object)
 	{
 		VBox box = new VBox();
 
