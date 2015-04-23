@@ -2,13 +2,10 @@ package putked;
 
 import javafx.geometry.Insets;
 import javafx.scene.*;
-import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
 
 public class PropertyEditor implements Editor
 {
@@ -39,7 +36,7 @@ public class PropertyEditor implements Editor
 		Button save = new Button("Save");
 		save.setMaxWidth(Double.MAX_VALUE);
 	
-		StructEditor se = new StructEditor(object, null);
+		StructEditor se = new StructEditor(object, null, false);
 		
 		VBox k = new VBox(se.createUI());
 		k.setPadding(new Insets(5));

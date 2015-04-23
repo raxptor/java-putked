@@ -4,15 +4,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import putked.Interop.MemInstance;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Parent;
 import javafx.scene.control.ContextMenu;
@@ -193,7 +190,7 @@ public class ObjectLibrary {
 		});
 	}
 
-	private void scanDirectory(TreeItem n, File f, String path) {
+	private void scanDirectory(TreeItem<String> n, File f, String path) {
 		if (!f.exists()) {
 			System.out.println("File " + f.getName() + " does not exist!");
 			return;
@@ -205,12 +202,12 @@ public class ObjectLibrary {
 			return;
 		}
 
-		// this directoyr.
+		// this directory.
 		DirEntry de = new DirEntry();
 		de.entries = new ArrayList<>();
 		de.path = path;
 
-		ArrayList<TreeItem> out = new ArrayList<>();
+		ArrayList<TreeItem<String>> out = new ArrayList<>();
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].isDirectory()) {
 				if (!files[i].getName().equals(".")

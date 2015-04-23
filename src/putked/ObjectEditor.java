@@ -2,8 +2,8 @@ package putked;
 
 import java.util.ArrayList;
 
+
 import putked.Interop.*;
-import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -20,15 +20,28 @@ class EditorCreator
 		field.setArrayIndex(index);
 		if (asArray)
 			return new ArrayEditor(mi, field);
-		
+				
 		switch (field.getType())
 		{
 			case 5:
-				return new StructEditor(field.getStructInstance(mi), field.getName());
+			{
+				String name = field.getName();
+				if (field.isArray())
+					name += "[" + index + "]";
+				
+				MemInstance _mi = field.getStructInstance(mi);
+				System.out.println("field ed [" + _mi.getType().getInlineEditor() + "]");
+				if (_mi.getType().getInlineEditor().equals("Vec4"))
+					return new StructEditor(_mi, name, true);
+				
+				return new StructEditor(_mi, name, false);
+			}
 			case 3:
 				return new PointerEditor(mi, field, index);
 			case 0:
 				return new Int32Editor(mi, field, index);
+			case 1:
+				return new UInt8Editor(mi, field, index);
 			// 8 => bool
 			case 8:
 				return new BooleanEditor(mi, field, index);
@@ -42,18 +55,18 @@ class EditorCreator
 		}
 	}
 	
+	public static Node makeArrayFieldLabel(Field fi, int index)
+	{
+		Label lbl = new Label(fi.getName() + "[" + index + "]");
+		lbl.setMinWidth(120);
+		return lbl;
+	}	
+	
 	public static Node makeFieldLabel(Field fi)
 	{
 		Label lbl = new Label(fi.getName());
 		lbl.setMinWidth(120);
 		lbl.setAlignment(Pos.CENTER_LEFT);
-		return lbl;
-	}
-	
-	public static Node makeArrayFieldLabel(Field fi, int index)
-	{
-		Label lbl = new Label(fi.getName() + "[" + index + "]");
-		lbl.setMinWidth(120);
 		return lbl;
 	}
 	
@@ -200,6 +213,51 @@ class Int32Editor implements FieldEditor
 			}
 			catch (NumberFormatException u)
 			{
+				tf.getStyleClass().remove("error");				
+				tf.getStyleClass().add("error");
+			}
+		});
+		return tf;
+	}
+}
+
+class UInt8Editor implements FieldEditor
+{
+	MemInstance m_mi;
+	Field m_f;
+	int m_index;
+	
+	public UInt8Editor(MemInstance mi, Field f, int index)
+	{
+		m_mi = mi;
+		m_f = f;
+		m_index = index;
+	}
+	
+	@Override
+	public Node createUI()
+	{
+		m_f.setArrayIndex(m_index);
+		
+		int tmp = m_f.getByte(m_mi);
+		if (tmp < 0)
+			tmp = 256 + tmp;
+		
+		TextField tf = new TextField(new Integer(tmp).toString());
+		tf.getStyleClass().add("int8-field");
+		tf.textProperty().addListener( (obs, oldValue, newValue) -> {
+			try 
+			{
+				int val = Integer.parseInt(newValue);
+				if (val > 255 || val < 0)
+					throw new NumberFormatException();
+				m_f.setArrayIndex(m_index);
+				m_f.setByte(m_mi, (byte)val);
+				tf.getStyleClass().remove("error");
+			}
+			catch (NumberFormatException u)
+			{
+				tf.getStyleClass().remove("error");
 				tf.getStyleClass().add("error");
 			}
 		});
@@ -274,6 +332,9 @@ class PointerEditor implements FieldEditor
 		
 		Button clear = new Button("X");
 		Button point = new Button("*");
+		
+		clear.getStyleClass().add("rm-button");
+		point.getStyleClass().add("point-button");
 		
 		ptrbar.getChildren().setAll(tf, point, clear);
 		tot.getChildren().setAll(ptrbar);
@@ -372,7 +433,7 @@ class PointerEditor implements FieldEditor
 	private VBox makeObjNode(MemInstance mi)
 	{
 		VBox aux = new VBox();
-		StructEditor se = new StructEditor(mi, "AUX");
+		StructEditor se = new StructEditor(mi, "AUX", false);
 		ArrayList<Node> tmp = new ArrayList<>();
 		tmp.add(se.createUI());
 		aux.setFillWidth(true);
@@ -464,13 +525,17 @@ class ArrayEditor implements FieldEditor
 			Label lbl = new Label(" " + i);
 			lbl.setMaxHeight(Double.MAX_VALUE);
 			lbl.setAlignment(Pos.CENTER);
+			lbl.getStyleClass().add("array-index");
+			if ((i&1) == 1)
+				lbl.getStyleClass().add("odd");
 			
 			gridpane.add(lbl,  0,  i);
 			GridPane.setValignment(lbl, VPos.TOP);
 			gridpane.add(m_editors.get(i),  1,  i);
 			
 			Button rm_btn = mkRemoveBtn(i);
-			gridpane.add(rm_btn, 2, i);		
+			rm_btn.getStyleClass().add("rm-button");
+			gridpane.add(rm_btn, 2, i);
 			GridPane.setValignment(rm_btn,  VPos.TOP);
 		}
 		
@@ -482,11 +547,13 @@ class StructEditor implements FieldEditor
 {
 	MemInstance m_mi;
 	String m_name;
+	boolean m_inline;
 	
-	public StructEditor(MemInstance mi, String name)
+	public StructEditor(MemInstance mi, String name, boolean inline)
 	{
 		m_mi = mi;
 		m_name = name;
+		m_inline = inline;
 	}
 	
 	@Override
@@ -496,18 +563,23 @@ class StructEditor implements FieldEditor
 		
 		boolean giveRect = false;
 
-	
+		Label header = null;
+		
 		if (m_name != null && !m_name.equals("parent"))
 		{
-			Label header = new Label(m_name + " (" + m_mi.getType().getName() + ")");
+			header = new Label(m_name + " (" + m_mi.getType().getName() + ")");
 			header.setMaxWidth(Double.MAX_VALUE);
-			header.setStyle("-fx-background-color: #ddf; -fx-border-insets: 2");
+			header.getStyleClass().add("struct-header");
 			header.setAlignment(Pos.CENTER);
 			header.setMaxHeight(Double.MAX_VALUE);
-			nodes.add(header);
+			
+			if (!m_inline)
+			{
+				nodes.add(header);
+			}
+			
 			giveRect = true;
 		}
-
 
 		for (int i=0;true;i++)
 		{
@@ -536,14 +608,37 @@ class StructEditor implements FieldEditor
 				}
 				else
 				{
-					// fields get hbox
-					HBox hb = new HBox();
-					hb.setMaxWidth(Double.MAX_VALUE);
-					hb.getChildren().setAll(EditorCreator.makeLabel(f, 0), ed);
-					HBox.setHgrow(ed, Priority.ALWAYS);
-					nodes.add(hb);
+					if (m_inline)
+					{
+						Label l = new Label(f.getName());
+						l.getStyleClass().add("inline-label");
+						ed.getStyleClass().add("inline-value");
+						nodes.add(l);
+						nodes.add(ed);
+					}
+					else
+					{
+						// fields get hbox
+						HBox hb = new HBox();
+						hb.setMaxWidth(Double.MAX_VALUE);
+						hb.getChildren().setAll(EditorCreator.makeLabel(f, 0), ed);
+						HBox.setHgrow(ed, Priority.ALWAYS);
+						nodes.add(hb);
+					}
 				}
 			}
+		}
+		
+		if (m_inline)
+		{
+			HBox box = new HBox();
+			box.getChildren().setAll(nodes);
+			if (header == null)
+				return box;
+		
+			VBox main = new VBox();
+			main.getChildren().setAll(header, box);
+			return main;
 		}
 	
 		VBox box = new VBox();
@@ -552,7 +647,6 @@ class StructEditor implements FieldEditor
 		
 		if (giveRect)
 		{
-//			box.setStyle("-fx-background-color: #e0f0f0;");
 			box.setMaxWidth(Double.MAX_VALUE);			
 		}
 		return box;
@@ -570,7 +664,7 @@ public class ObjectEditor
 		m_props = new VBox();
 		m_mi = mi;
 		
-		m_root = new StructEditor(mi, null);		
+		m_root = new StructEditor(mi, null, false);		
 		m_props.getChildren().setAll(m_root.createUI());
 		m_props.setMinWidth(400);
 	}

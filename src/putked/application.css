@@ -1,40 +1,61 @@
-.button
+.root 
 {
-    -fx-background-color: 
-        #707070,
-        linear-gradient(#fcfcfc, #f3f3f3),
-        linear-gradient(#f2f2f2 0%, #ebebeb 49%, #dddddd 50%, #cfcfcf 100%);
-    -fx-background-insets: 0,1,2;
-    -fx-background-radius: 3,2,1;
+    -fx-font-size: 9pt;
     -fx-font-family: "Verdana";
-    -fx-font-size: 10px;
-    -fx-padding: 5;
+    -fx-base: #eef;
+    -fx-background: #111;
+    -fx-color: #222;
 }
-.button Text
+
+.array-index 
 {
-    -fx-effect: dropshadow( one-pass-box , rgba(0,0,0,0.9) , 1, 0.0 , 0 , 1 );
+ 	-fx-min-width: 25px;
+	-fx-background-color: #444;
 }
-.text-field
+
+.array-index.odd
 {
-	-fx-font-size: 12px;
+	-fx-background-color: #222;
 }
-.float-field
+
+.rm-button
 {
-	-fx-max-width: 120px;
+	-fx-color: #f00;
 }
+
+.add-button
+{
+	-fx-color: #0f0;	
+}
+
+.point-button
+{
+
+}
+
+.struct-header {
+	-fx-background-color: #334;
+	-fx-color: #999;
+	-fx-min-height: 20 px;
+}
+
 .int32-field
 {
-	-fx-max-width: 120px;
+       -fx-max-width: 120px;
 }
 .error
 {
-	-fx-background-color: #f44;
+       -fx-background-color: #f44;
 }
-.label
+
+.inline-value
 {
-	-fx-font-size: 12px;
-	-fx-padding: 4;
+	-fx-max-width: 65px;
 }
-.scroll-pane {
-    -fx-background-color:transparent;
+
+.inline-label
+{
+	-fx-alignment: center;
+	-fx-min-width: 25px;
+	-fx-min-height: 20px;
 }
