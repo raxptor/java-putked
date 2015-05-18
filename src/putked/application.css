@@ -48,6 +48,12 @@
        -fx-background-color: #f44;
 }
 
+.field-label
+{
+	-fx-min-width: 130 px;
+	-fx-min-height: 20 px;
+}
+
 .inline-value
 {
 	-fx-max-width: 65px;
@@ -58,4 +64,20 @@
 	-fx-alignment: center;
 	-fx-min-width: 25px;
 	-fx-min-height: 20px;
+}
+
+.tab-pane
+{
+	-fx-open-tab-animation: none; 
+	-fx-close-tab-animation: none;
+}
+
+.drag-drop-ok
+{
+	-fx-background-color: #f4f;
+}
+
+.drag-drop-not-ok
+{
+	-fx-background-color: #f00;
 }

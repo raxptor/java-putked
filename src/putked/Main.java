@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.Node;
@@ -12,6 +13,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 public class Main extends Application 
 {
@@ -110,21 +112,39 @@ public class Main extends Application
 		return holder.out;
     }
     
+    
+    class TypeOption
+    {
+    	public String name;
+    	Interop.Type type;
+    };
+
+    public Interop.Type askForType()
+    {
+    	return askForSubType(null, false);
+    }
+
     public Interop.Type askForSubType(Interop.Type p, boolean asAux)
     {
     	ArrayList<Interop.Type> all = Interop.s_wrap.getAllTypes();
-    	ObservableList<String> out = FXCollections.observableArrayList();
+    	ObservableList<TypeOption> out = FXCollections.observableArrayList();
     	for (Interop.Type t : all)
     	{
-    		if (t.hasParent(p) && (!asAux || t.permitAsAuxInstance()))
-    			out.add(t.getName());
+    		if (p == null || t.hasParent(p) && (!asAux || t.permitAsAuxInstance()))
+    		{
+    			TypeOption to = new TypeOption();
+    			to.name = "[" + t.getModule() + "] - " + t.getName();
+    			to.type = t;
+    			out.add(to);
+    		}
     	}
     	
     	if (out.size() == 1)
-    		return Interop.s_wrap.getTypeByName(out.get(0));
+    		return out.get(0).type;
     	
-    	ListView<String> opts = new ListView<>();
-    	opts.setItems(out);
+    	FilteredList<TypeOption> filter = new FilteredList<TypeOption>(out, (obj) -> true);
+    	ListView<TypeOption> opts = new ListView<>();
+    	opts.setItems(filter);
     	opts.getSelectionModel().select(0);
 
     	VBox box = new VBox();
@@ -133,6 +153,31 @@ public class Main extends Application
     	ok.setMaxWidth(Double.MAX_VALUE);
     	cancel.setMaxWidth(Double.MAX_VALUE);
     	
+    	TextField searchField = new TextField();
+    	searchField.textProperty().addListener( (obs, oldval, newval) -> {
+    		filter.setPredicate( (to) -> {
+    			return to.name.contains(searchField.textProperty().get());
+    		});
+    	});
+    	
+        opts.setCellFactory(new Callback<ListView<TypeOption>, ListCell<TypeOption>>(){
+            @Override
+            public ListCell<TypeOption> call(ListView<TypeOption> p) {
+               ListCell<TypeOption> cell = new ListCell<TypeOption>(){
+                    @Override
+                    protected void updateItem(TypeOption t, boolean bln) {
+                        super.updateItem(t, bln);
+                        if (t != null) {
+                            setText(t.name);
+                        } else {
+                        	setText("");
+                        }
+                    }
+                };
+                return cell;
+            }
+        });
+        
     	class Tmp {
     		Interop.Type out = null;
     	};
@@ -143,7 +188,7 @@ public class Main extends Application
     	Stage stage = makeDialogStage(scene);
    	
     	ok.setOnAction((evt) -> {
-    		holder.out = Interop.s_wrap.getTypeByName(opts.getSelectionModel().getSelectedItem());
+    		holder.out = opts.getSelectionModel().getSelectedItem().type;
     		stage.hide();
     	});
 
@@ -151,7 +196,7 @@ public class Main extends Application
     		stage.hide();
     	});
 
-    	box.getChildren().setAll(opts, ok, cancel);    	
+    	box.getChildren().setAll(searchField, opts, ok, cancel);    	
     	stage.showAndWait();
  	
 		return holder.out;

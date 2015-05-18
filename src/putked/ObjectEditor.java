@@ -2,7 +2,6 @@ package putked;
 
 import java.util.ArrayList;
 
-
 import putked.Interop.*;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -11,6 +10,8 @@ import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.*;
 import javafx.scene.control.*;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
 
 class EditorCreator
@@ -65,8 +66,16 @@ class EditorCreator
     public static Node makeFieldLabel(Field fi)
     {
         Label lbl = new Label(fi.getName());
-        lbl.setMinWidth(120);
+        lbl.getStyleClass().add("field-label");
         lbl.setAlignment(Pos.CENTER_LEFT);
+        return lbl;
+    }
+    
+    public static Node makeInlineEditorHeader(String name)
+    {
+        Label lbl = new Label(name);
+        lbl.getStyleClass().add("field-label");
+        lbl.setAlignment(Pos.CENTER_LEFT); 
         return lbl;
     }
 
@@ -80,12 +89,20 @@ class EditorCreator
 
     public static String makeInlineAuxTitle(MemInstance mi)
     {
-        return mi.getPath() + " (" + mi.getType().getName() + ")";
+        return mi.getType().getName() + " [" + filterAux(mi.getPath()) + "]";
     }
 
     public static String makeInlineTitle(MemInstance mi)
     {
         return mi.getPath() + " (" + mi.getType().getName() + ")";
+    }
+    
+    public static String filterAux(String input)
+    {
+    	for (int i=0;i<input.length();i++)
+    		if (input.charAt(i) == '#')
+    			return input.substring(i);
+    	return input;
     }
 }
 
@@ -314,6 +331,7 @@ class PointerEditor implements FieldEditor
         m_index = index;
     }
 
+
     @Override
     public Node createUI()
     {
@@ -391,7 +409,68 @@ class PointerEditor implements FieldEditor
                 }
             }
         });
-
+        
+        Interop.Type refType = Interop.s_wrap.getTypeByName(m_f.getRefType());
+        
+        if (!m_f.isAuxPtr())
+        {
+        	tot.setOnDragOver(new EventHandler<DragEvent>() {
+        	    public void handle(DragEvent event) {
+	                if (event.getGestureSource() != tf && event.getDragboard().hasString()) {
+	                	MemInstance dragging = Interop.s_wrap.load(event.getDragboard().getString());
+	                	if (dragging != null && dragging.getType().hasParent(refType)) {
+	                		event.acceptTransferModes(TransferMode.LINK);
+	                	}
+	                }
+        	        event.consume();
+        	    }
+        	});       	
+        	
+	        tot.setOnDragEntered(new EventHandler<DragEvent>() {
+	            public void handle(DragEvent event) {
+	            	tf.getStyleClass().remove("drag-drop-ok");
+	            	tf.getStyleClass().remove("drag-drop-not-ok");
+	                if (event.getGestureSource() != tf && event.getDragboard().hasString()) {
+	                	MemInstance dragging = Interop.s_wrap.load(event.getDragboard().getString());
+	                	if (dragging != null && dragging.getType().hasParent(refType)) {              	
+	                		tf.getStyleClass().add("drag-drop-ok");
+	                	} else {
+	                		tf.getStyleClass().add("drag-drop-not-ok");       		
+	                	}
+	                }
+	                event.consume();
+	            }
+	        });
+	        
+	        tot.setOnDragDropped(new EventHandler<DragEvent>() {
+	            public void handle(DragEvent event) {
+	            	boolean success = false;
+	                if (event.getGestureSource() != tf && event.getDragboard().hasString()) {
+	                	String path = event.getDragboard().getString();
+	                	MemInstance dragging = Interop.s_wrap.load(path);
+	                	if (dragging != null && dragging.getType().hasParent(refType)) {
+	                        m_f.setArrayIndex(m_index);
+	                        m_f.setPointer(m_mi, path);
+	                        tf.textProperty().set(path);
+	                        ptrbar.getChildren().setAll(tf, point, clear);
+	                        tot.getChildren().setAll(ptrbar); 
+	                        success = true;
+	                	}
+	                }
+	                event.setDropCompleted(success);
+	                event.consume();
+	             }
+	        });
+	        
+	        tot.setOnDragExited(new EventHandler<DragEvent>() {
+	            public void handle(DragEvent event) {
+	            	tf.getStyleClass().remove("drag-drop-ok");
+	            	tf.getStyleClass().remove("drag-drop-not-ok");
+	            	event.consume();
+	            }
+	        }); 
+        }
+        
         if (m_f.isAuxPtr())
         {
             m_f.setArrayIndex(m_index);
@@ -635,8 +714,8 @@ class StructEditor implements FieldEditor
             if (header == null)
                 return box;
 
-            VBox main = new VBox();
-            main.getChildren().setAll(header, box);
+            HBox main = new HBox();
+            main.getChildren().setAll(EditorCreator.makeInlineEditorHeader(m_name), box);
             return main;
         }
 

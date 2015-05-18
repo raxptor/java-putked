@@ -11,6 +11,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.event.EventHandler;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -21,7 +22,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -130,7 +134,7 @@ public class ObjectLibrary {
 								+ " for " + de.name);
 					}
 				});
-
+		
 		m_filesView.setOnMousePressed(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent event) {
@@ -141,6 +145,17 @@ public class ObjectLibrary {
 			}
 		});
 		
+		/*
+		ContextMenu dirmenu = new ContextMenu();
+		MenuItem newobj = new MenuItem("New object");
+		newobj.setOnAction( (actionEvt) -> {
+			DirEntry de = (actionEvt.getSource()
+		})
+		
+		
+		dirmenu.getItems().add(newobj);
+		m_dirView.setContextMenu(dirmenu);
+		*/
 		m_filesView.setRowFactory(new Callback<TableView<ObjEntry>, TableRow<ObjEntry>>() {
 			@Override
 			public TableRow<ObjEntry> call(TableView<ObjEntry> tableView) {
@@ -153,6 +168,17 @@ public class ObjectLibrary {
 		                } else {
 		                	this.setContextMenu(null);
 		                }
+		                Node th = this;
+		                setOnDragDetected(new EventHandler<MouseEvent>() {
+		                    public void handle(MouseEvent event) {
+		                        Dragboard db = th.startDragAndDrop(TransferMode.ANY);
+		                        ClipboardContent content = new ClipboardContent();
+		                        content.putString(item.path);
+		                        db.setContent(content);
+		                        event.consume();
+		                    }
+		                });
+		                
 		            }
 		        };
 			}
