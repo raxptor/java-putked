@@ -145,17 +145,24 @@ public class ObjectLibrary {
 			}
 		});
 		
-		/*
+
 		ContextMenu dirmenu = new ContextMenu();
+		ArrayList<DataImporter> importers = Main.getImporters();
+		for (DataImporter imp : importers)
+		{
+			MenuItem newobj = new MenuItem("Import [" + imp.getName() + "]");
+			newobj.setOnAction( (actionEvt) -> {
+				TreeItem<String> ti = m_dirView.getSelectionModel().getSelectedItem();
+				imp.importTo(m_dirMap.get(ti).path);
+			});
+			dirmenu.getItems().add(newobj);
+		}
+		
 		MenuItem newobj = new MenuItem("New object");
-		newobj.setOnAction( (actionEvt) -> {
-			DirEntry de = (actionEvt.getSource()
-		})
-		
-		
 		dirmenu.getItems().add(newobj);
+		
 		m_dirView.setContextMenu(dirmenu);
-		*/
+
 		m_filesView.setRowFactory(new Callback<TableView<ObjEntry>, TableRow<ObjEntry>>() {
 			@Override
 			public TableRow<ObjEntry> call(TableView<ObjEntry> tableView) {

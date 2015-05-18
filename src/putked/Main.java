@@ -2,6 +2,7 @@ package putked;
 
 import java.util.ArrayList;
 
+import putked.Interop.MemInstance;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,14 +16,25 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
+class OpenEditors
+{
+	public Editor _editor;
+	public MemInstance _mi;
+	public Tab _tab;
+	public String _contentHash;
+}
+
 public class Main extends Application 
 {
 	public static Main s_instance;
-	
+		
 	private TabPane m_pane;
 	public ObjectLibrary m_objectLibrary;
 	private static ArrayList<Editor> m_editors = new ArrayList<>();
-		
+	private static ArrayList<DataImporter> m_importers = new ArrayList<DataImporter>();
+	private static ArrayList<OpenEditors> m_openEditors = new ArrayList<OpenEditors>();
+	private static Editor m_defaultEditor =  new PropertyEditor();
+	
     public static void main(String[] args) 
     {
     	initEditor();
@@ -34,9 +46,19 @@ public class Main extends Application
     	addEditor(new PropertyEditor()); 	
     }
     
+    public static void addImporter(DataImporter importer)
+    {
+    	m_importers.add(importer);
+    }
+    
     public static void addEditor(Editor e)
     {
     	m_editors.add(e);
+    }
+    
+    public static ArrayList<DataImporter> getImporters()
+    {
+    	return m_importers;
     }
     
     public static ArrayList<Editor> getEditors()
@@ -45,8 +67,8 @@ public class Main extends Application
     }
     
     public void startEditing(String path)
-    {
-    	startEditing(path, new PropertyEditor());
+    {   	
+    	startEditing(path, m_defaultEditor);
     }
     
     public void startEditing(String path, Editor editor)
@@ -56,8 +78,25 @@ public class Main extends Application
     		return;
     	if (!editor.canEdit(mi.getType()))
     		return;
+    	
+    	for (int i=0;i<m_openEditors.size();i++)
+    	{
+    		OpenEditors oe = m_openEditors.get(i);
+    		if (oe._mi.getPath().equals(mi.getPath())) // && oe._editor == editor)
+    		{
+    		   	m_pane.getSelectionModel().select(oe._tab);
+    		   	return;
+    		}
+    	}
    
-    	addTab(editor.createUI(mi), path);
+    	Tab t = addTab(mi, editor.createUI(mi), path);
+    	
+    	OpenEditors oe = new OpenEditors();
+    	oe._editor = editor;
+    	oe._mi = mi;
+    	oe._tab = t;
+    	oe._contentHash = mi.getContentHash();
+    	m_openEditors.add(oe);
     }
     
     public Stage makeDialogStage(javafx.scene.Scene scene)
@@ -67,6 +106,11 @@ public class Main extends Application
     	s.setTitle("Question");
     	s.setScene(scene);
     	return s;    	
+    }
+    
+    public String[] askForResources()
+    {
+    	return null;
     }
     
     public String askForInstancePath(Interop.Type p)
@@ -202,12 +246,70 @@ public class Main extends Application
 		return holder.out;
     }
     
-    public void addTab(Node n, String title)
+    public static class ImportFinalizationQuestion
+    {
+    	public String proposedPath;
+    	public String proposedResPath;
+    	public boolean accepted;
+    }
+    
+    public void askImportFinalization(ImportFinalizationQuestion question, Node aux)
+    {
+    	VBox box = new VBox();
+    	Button ok = new Button("OK");
+    	Button cancel = new Button("Cancel");
+    	ok.setMaxWidth(Double.MAX_VALUE);
+    	cancel.setMaxWidth(Double.MAX_VALUE);
+    	
+    	TextField propPath = new TextField();
+    	if (question.proposedPath != null)
+    	{
+        	Label L = new Label("Object path");
+        	propPath.setText(question.proposedPath);
+    		box.getChildren().add(L);
+    		box.getChildren().add(propPath);
+    	}
+    	
+    	TextField propResPath = new TextField();
+    	if (question.proposedResPath != null)
+    	{
+        	Label L = new Label("Resource path");
+        	propResPath.setText(question.proposedResPath);
+    		box.getChildren().add(L);
+    		box.getChildren().add(propResPath);
+    	}
+    	
+    	if (aux != null)
+    		box.getChildren().add(aux);
+    	
+    	box.getChildren().add(ok);
+    	box.getChildren().add(cancel);
+
+    	Scene scene = new Scene(box, 300, 400);
+    	Stage stage = makeDialogStage(scene);
+   	
+    	ok.setOnAction((evt) -> {
+    		question.accepted = true;
+    		question.proposedResPath = propResPath.getText();
+    		question.proposedPath = propPath.getText();
+    		stage.hide();
+    	});
+
+    	cancel.setOnAction( (evt) -> {
+    		question.accepted = false;
+    		stage.hide();
+    	});
+
+    	stage.showAndWait();
+    }    
+    
+    public Tab addTab(MemInstance mi, Node n, String title)
     {
     	Tab t = new Tab(title);
     	t.setContent(n);
     	m_pane.getTabs().add(t);
     	m_pane.getSelectionModel().select(t);
+    	return t;
     }
     
     @Override
