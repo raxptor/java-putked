@@ -1,0 +1,19 @@
++ mer import
++ texture preview
++ fixa knapp för save 
++ struktur för att bundla ihop editorn med pipeline
+
+=> Öppna .config-fil
+
+* Editor i dev-mode
+	* Läs från build-foldern
+
+
+
+
+=> Packa ihop
+
+	=> interopdll + data-dll
+	=> -databuilder
+	=> -interopdll
+	=> -dll:en
