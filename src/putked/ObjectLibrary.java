@@ -150,12 +150,12 @@ public class ObjectLibrary {
 			MenuItem newobj = new MenuItem("Import [" + imp.getName() + "]");
 			newobj.setOnAction( (actionEvt) -> {
 				TreeItem<String> ti = m_dirView.getSelectionModel().getSelectedItem();
-				String whereTo = m_dirMap.get(ti).path + "neue";
+				String whereTo = m_dirMap.get(ti).path;
 				javafx.application.Platform.runLater(new Runnable() {
 					@Override
 					public void run() {
-						imp.importTo(whereTo);
-						loadIndex();					
+						if (imp.importTo(whereTo))
+							loadIndex();					
 					}
 				});
 				actionEvt.consume();
