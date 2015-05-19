@@ -50,27 +50,21 @@ public class ObjectLibrary {
 	private TreeView<String> m_dirView;
 	private TableView<ObjEntry> m_filesView;
 	private HashMap<TreeItem<String>, DirEntry> m_dirMap = new HashMap<>();
-	private ObservableList<ObjEntry> m_allObjects = FXCollections
-			.observableArrayList();
+	private ObservableList<ObjEntry> m_allObjects = FXCollections.observableArrayList();
 
 	FilteredList<ObjEntry> m_filteredData;
 	private String m_dirFilterString = "";
 
 	ObjectLibrary() {
+		
 		m_root = new HBox();
 		m_root.setFillHeight(true);
 		m_root.setMaxWidth(100000.0);
 		m_root.setMaxHeight(100000.0);
 
-		final TreeItem<String> root = new TreeItem<>("/");
-		root.setExpanded(true);
-
-		scanDirectory(root, new File(
-				"/Users/dannilsson/git/claw-putki/data/objs/"), "");
-
 		// Creating a tree table view
-		m_dirView = new TreeView<String>(root);
-
+		m_dirView = new TreeView<String>();
+		
 		m_root.getChildren().add(m_dirView);
 
 		TableColumn<ObjEntry, String> col_fn = new TableColumn<>("Name");
@@ -128,10 +122,13 @@ public class ObjectLibrary {
 							TreeItem<String> paramT1,
 							TreeItem<String> selectedItem) {
 						DirEntry de = m_dirMap.get(selectedItem);
-						m_dirFilterString = de.path;
-						updateFilter();
-						System.out.println("I got " + de.entries.size()
-								+ " for " + de.name);
+						if (de != null)
+						{
+							m_dirFilterString = de.path;
+							updateFilter();
+							System.out.println("I got " + de.entries.size()
+									+ " for " + de.name);
+						}
 					}
 				});
 		
@@ -153,12 +150,43 @@ public class ObjectLibrary {
 			MenuItem newobj = new MenuItem("Import [" + imp.getName() + "]");
 			newobj.setOnAction( (actionEvt) -> {
 				TreeItem<String> ti = m_dirView.getSelectionModel().getSelectedItem();
-				imp.importTo(m_dirMap.get(ti).path);
+				String whereTo = m_dirMap.get(ti).path + "neue";
+				javafx.application.Platform.runLater(new Runnable() {
+					@Override
+					public void run() {
+						imp.importTo(whereTo);
+						loadIndex();					
+					}
+				});
+				actionEvt.consume();
 			});
 			dirmenu.getItems().add(newobj);
 		}
 		
 		MenuItem newobj = new MenuItem("New object");
+		newobj.setOnAction( (actionEvt) -> {
+			TreeItem<String> ti = m_dirView.getSelectionModel().getSelectedItem();
+			String whereTo = m_dirMap.get(ti).path + "neue";
+			javafx.application.Platform.runLater(new Runnable() {
+				@Override
+				public void run() {
+					Interop.Type t = Main.s_instance.askForType();
+					if (t != null)
+					{
+						Main.ImportFinalizationQuestion fin = new Main.ImportFinalizationQuestion();
+						fin.proposedPath = whereTo;
+						Main.s_instance.askImportFinalization(fin, null);
+						if (fin.accepted)
+						{
+							t.createInstance(fin.proposedPath);
+							loadIndex();
+						}
+					}
+				}
+			});
+			actionEvt.consume();
+		});
+		
 		dirmenu.getItems().add(newobj);
 		
 		m_dirView.setContextMenu(dirmenu);
@@ -190,6 +218,8 @@ public class ObjectLibrary {
 		        };
 			}
 		});
+		
+		loadIndex();
 	}
 	
 	public ContextMenu makeContextMenu(ObjEntry item)
@@ -221,6 +251,16 @@ public class ObjectLibrary {
 						|| obj.type.getName().contains(s);
 			return false;
 		});
+	}
+	
+	private void loadIndex()
+	{
+		m_dirMap.clear();
+		m_allObjects.clear();
+		final TreeItem<String> root = new TreeItem<>("/");
+		root.setExpanded(true);
+		scanDirectory(root, new File("/Users/dannilsson/git/claw-putki/data/objs/"), "");
+		m_dirView.setRoot(root);
 	}
 
 	private void scanDirectory(TreeItem<String> n, File f, String path) {

@@ -8,6 +8,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -101,8 +102,10 @@ public class Main extends Application
     
     public Stage makeDialogStage(javafx.scene.Scene scene)
     {
+        scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());       
+ 	
     	Stage s = new Stage();
-    	s.initModality(Modality.WINDOW_MODAL);
+    	s.initModality(Modality.APPLICATION_MODAL);
     	s.setTitle("Question");
     	s.setScene(scene);
     	return s;    	
@@ -140,7 +143,7 @@ public class Main extends Application
     	final Tmp holder = new Tmp();
 
     	Scene scene = new Scene(box, 300, 400);
-    	Stage stage = makeDialogStage(scene);
+        Stage stage = makeDialogStage(scene);
    	
     	ok.setOnAction((evt) -> {
     		holder.out = opts.getSelectionModel().getSelectedItem();
@@ -198,11 +201,14 @@ public class Main extends Application
     	cancel.setMaxWidth(Double.MAX_VALUE);
     	
     	TextField searchField = new TextField();
+
     	searchField.textProperty().addListener( (obs, oldval, newval) -> {
     		filter.setPredicate( (to) -> {
-    			return to.name.contains(searchField.textProperty().get());
+    			return to.name.contains(newval);
     		});
     	});
+
+    	searchField.setText("");
     	
         opts.setCellFactory(new Callback<ListView<TypeOption>, ListCell<TypeOption>>(){
             @Override
@@ -254,20 +260,18 @@ public class Main extends Application
     }
     
     public void askImportFinalization(ImportFinalizationQuestion question, Node aux)
-    {
-    	VBox box = new VBox();
-    	Button ok = new Button("OK");
-    	Button cancel = new Button("Cancel");
-    	ok.setMaxWidth(Double.MAX_VALUE);
-    	cancel.setMaxWidth(Double.MAX_VALUE);
+    {    	
+    	VBox contents = new VBox();
+    	contents.getStyleClass().add("vbox-dialog");
+    	contents.getStyleClass().add("root");
     	
     	TextField propPath = new TextField();
     	if (question.proposedPath != null)
     	{
         	Label L = new Label("Object path");
         	propPath.setText(question.proposedPath);
-    		box.getChildren().add(L);
-    		box.getChildren().add(propPath);
+    		contents.getChildren().add(L);
+    		contents.getChildren().add(propPath);
     	}
     	
     	TextField propResPath = new TextField();
@@ -275,15 +279,27 @@ public class Main extends Application
     	{
         	Label L = new Label("Resource path");
         	propResPath.setText(question.proposedResPath);
-    		box.getChildren().add(L);
-    		box.getChildren().add(propResPath);
+        	contents.getChildren().add(L);
+        	contents.getChildren().add(propResPath);
     	}
     	
     	if (aux != null)
-    		box.getChildren().add(aux);
+    		contents.getChildren().add(aux);
+
+    	contents.setMaxHeight(Double.MAX_VALUE);
+
+    	VBox box = new VBox();
+    	Button ok = new Button("OK");
+    	Button cancel = new Button("Cancel");
+    	ok.setMaxWidth(Double.MAX_VALUE);
+    	cancel.setMaxWidth(Double.MAX_VALUE);
     	
-    	box.getChildren().add(ok);
-    	box.getChildren().add(cancel);
+    	HBox btns = new HBox();
+    	btns.getChildren().setAll(cancel, ok);
+    	btns.setAlignment(Pos.BOTTOM_CENTER);
+    	
+    	box.getChildren().add(contents);
+    	box.getChildren().add(btns);
 
     	Scene scene = new Scene(box, 300, 400);
     	Stage stage = makeDialogStage(scene);
@@ -340,5 +356,9 @@ public class Main extends Application
         scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());       
         stage.setScene(scene);
         stage.show();
+        
+        ImportFinalizationQuestion q = new ImportFinalizationQuestion();
+        q.proposedPath = "apa";
+        q.proposedResPath = "kuka";
     }     
 }

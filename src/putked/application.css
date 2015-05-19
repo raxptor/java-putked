@@ -7,6 +7,26 @@
     -fx-color: #222;
 }
 
+.context-menu {
+  -fx-font-size: 9pt;
+  -fx-font-family: "Verdana";
+  -fx-background-color: #111;
+  -fx-text-fill: #eef;
+}
+
+.menu-item .label {
+  -fx-text-fill: #eee;
+}
+
+.menu-item:focused .label {
+  -fx-text-fill: white;
+}
+
+.vbox-dialog
+{
+	-fx-padding: 10px;
+}
+
 .array-index 
 {
  	-fx-min-width: 25px;
