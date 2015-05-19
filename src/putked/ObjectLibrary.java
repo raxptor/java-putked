@@ -1,5 +1,6 @@
 package putked;
 
+import java.io.Console;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,16 +75,13 @@ public class ObjectLibrary {
 
 		col_fn.setCellValueFactory(new Callback<CellDataFeatures<ObjEntry, String>, ObservableValue<String>>() {
 			public ObservableValue<String> call(
-					CellDataFeatures<ObjEntry, String> p) {
-				// p.getValue() returns the Person instance for a particular
-				// TableView row
-				return new ReadOnlyStringWrapper(p.getValue().path);
+				CellDataFeatures<ObjEntry, String> p) {
+					return new ReadOnlyStringWrapper(p.getValue().path);
 			}
 		});
 
 		col_type.setCellValueFactory(new Callback<CellDataFeatures<ObjEntry, String>, ObservableValue<String>>() {
-			public ObservableValue<String> call(
-					CellDataFeatures<ObjEntry, String> p) {
+			public ObservableValue<String> call(CellDataFeatures<ObjEntry, String> p) {
 				Interop.Type t = p.getValue().type;
 				if (t != null)
 					return new ReadOnlyStringWrapper(t.getName());
@@ -136,8 +134,7 @@ public class ObjectLibrary {
 			@Override
 			public void handle(MouseEvent event) {
 				if (event.isPrimaryButtonDown() && event.getClickCount() == 2) {
-					Main.s_instance.startEditing(m_filesView
-							.getSelectionModel().getSelectedItem().path);
+					Main.s_instance.startEditing(m_filesView.getSelectionModel().getSelectedItem().path);
 				}
 			}
 		});
@@ -259,7 +256,8 @@ public class ObjectLibrary {
 		m_allObjects.clear();
 		final TreeItem<String> root = new TreeItem<>("/");
 		root.setExpanded(true);
-		scanDirectory(root, new File("/Users/dannilsson/git/claw-putki/data/objs/"), "");
+		System.out.println("gurka " + Interop.getObjsPath());
+		scanDirectory(root, new File(Interop.getObjsPath()), "");
 		m_dirView.setRoot(root);
 	}
 

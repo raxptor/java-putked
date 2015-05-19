@@ -338,8 +338,8 @@ public class Main extends Application
     		return;
     	}
 
-    	String base = "/Users/dannilsson/git/claw-putki/";
-    	Interop.Initialize(base + "/build/libclaw-data-dll.dylib", base);
+    	String base = "/Users/dannilsson/git/lilwiz";
+    	Interop.Initialize(base + "/build/liblilwiz-data-dll.dylib", base);
 
     	stage.setTitle("PutkEd");
     	
@@ -356,9 +356,5 @@ public class Main extends Application
         scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());       
         stage.setScene(scene);
         stage.show();
-        
-        ImportFinalizationQuestion q = new ImportFinalizationQuestion();
-        q.proposedPath = "apa";
-        q.proposedResPath = "kuka";
     }     
 }

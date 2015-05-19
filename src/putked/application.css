@@ -14,6 +14,16 @@
   -fx-text-fill: #eef;
 }
 
+.proped-header {
+	-fx-padding: 4;
+	-fx-border-color: #444;
+}
+
+.proped-header .label {
+	-fx-min-height: 25;
+	-fx-padding: 4;
+}
+
 .menu-item .label {
   -fx-text-fill: #eee;
 }

@@ -3,17 +3,12 @@
 + fixa knapp för save 
 + struktur för att bundla ihop editorn med pipeline
 
-=> Öppna .config-fil
+=> Dev-mode
+	- Fungera som nu
+	- Köra generiskt med putked.config
 
-* Editor i dev-mode
-	* Läs från build-foldern
+=> Bundled
+	- Allting inpaketerat
+	- Paketerat med en fil som säger projekt-id
+	- När ladda putked.config kolla så det matchar och vägra öppna annars 
 
-
-
-
-=> Packa ihop
-
-	=> interopdll + data-dll
-	=> -databuilder
-	=> -interopdll
-	=> -dll:en
